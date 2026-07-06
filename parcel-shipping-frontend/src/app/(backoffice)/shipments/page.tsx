@@ -1,32 +1,42 @@
+import { BackOfficeHeader } from "@/components/layout/BackOfficeHeader";
+
 export default function ShipmentsPage() {
   return (
-    <main className="min-h-screen bg-page px-6 py-10 text-ink">
-      <section className="mx-auto max-w-7xl">
-        <p className="text-sm font-medium text-primary">Parcel Shipping</p>
+    <>
+      <BackOfficeHeader activeSection="shipments" />
 
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          My Shipments
-        </h1>
+      <main
+        id="main-content"
+        className="min-h-screen bg-page px-4 py-8 text-ink sm:px-6 lg:px-8"
+      >
+        <section className="mx-auto max-w-[1440px]">
+          <p className="text-sm font-semibold text-primary">Shipments</p>
 
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/70">
-          Manage, track, and review all parcel shipments from one place.
-        </p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">
+            My Shipments
+          </h1>
 
-        <div className="mt-8 rounded-2xl border border-border bg-surface p-8 shadow-sm">
-          <p className="text-sm font-medium text-primary">
-            Shipments module
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-ink/70">
+            Manage, filter, track, and review all parcel shipments from one
+            workspace.
           </p>
 
-          <h2 className="mt-2 text-xl font-semibold">
-            Back-office interface is being prepared
-          </h2>
+          <div className="mt-8 rounded-2xl border border-border bg-surface p-8 shadow-sm">
+            <p className="text-sm font-semibold text-primary">
+              Shipment workspace
+            </p>
 
-          <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">
-            The shared header, navigation, filters, shipment table, and
-            shipment details view will be added progressively in this module.
-          </p>
-        </div>
-      </section>
-    </main>
+            <h2 className="mt-2 text-xl font-bold">
+              The shipment list is being prepared
+            </h2>
+
+            <p className="mt-3 max-w-xl text-sm leading-6 text-ink/70">
+              Filters, shipment status badges, the shipment table, pagination,
+              and printing actions will be added progressively.
+            </p>
+          </div>
+        </section>
+      </main>
+    </>
   );
 }
