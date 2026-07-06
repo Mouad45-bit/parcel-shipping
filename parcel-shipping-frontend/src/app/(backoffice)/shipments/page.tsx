@@ -1,4 +1,5 @@
 import { BackOfficeHeader } from "@/components/layout/BackOfficeHeader";
+import { PageCard } from "@/components/ui/PageCard";
 
 export default function ShipmentsPage() {
   return (
@@ -21,7 +22,7 @@ export default function ShipmentsPage() {
             workspace.
           </p>
 
-          <div className="mt-8 rounded-2xl border border-border bg-surface p-8 shadow-sm">
+          <PageCard className="mt-8 p-6 sm:p-8">
             <p className="text-sm font-semibold text-primary">
               Shipment workspace
             </p>
@@ -34,7 +35,7 @@ export default function ShipmentsPage() {
               Filters, shipment status badges, the shipment table, pagination,
               and printing actions will be added progressively.
             </p>
-          </div>
+          </PageCard>
         </section>
       </main>
     </>
