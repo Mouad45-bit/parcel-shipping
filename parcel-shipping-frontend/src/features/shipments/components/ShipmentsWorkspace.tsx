@@ -17,10 +17,18 @@ export function ShipmentsWorkspace() {
     initialShipmentFilters,
   );
 
+  const [selectedShipmentIds, setSelectedShipmentIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+
   const filteredShipments = useMemo(
     () => filterShipments(shipmentFixtures, filters),
     [filters],
   );
+
+  const selectedFilteredShipmentCount = filteredShipments.filter((shipment) =>
+    selectedShipmentIds.has(shipment.id),
+  ).length;
 
   return (
     <PageCard className="p-5 sm:p-6 lg:p-7">
@@ -43,11 +51,16 @@ export function ShipmentsWorkspace() {
 
       <ShipmentsFilters
         filters={filters}
+        selectedShipmentCount={selectedFilteredShipmentCount}
         onChange={setFilters}
         onReset={() => setFilters(initialShipmentFilters)}
       />
 
-      <ShipmentsTable shipments={filteredShipments} />
+      <ShipmentsTable
+        shipments={filteredShipments}
+        selectedShipmentIds={selectedShipmentIds}
+        onSelectedShipmentIdsChange={setSelectedShipmentIds}
+      />
     </PageCard>
   );
 }

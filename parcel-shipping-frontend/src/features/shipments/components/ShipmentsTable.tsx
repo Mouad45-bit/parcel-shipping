@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -30,6 +37,8 @@ type SortState = {
 
 type ShipmentsTableProps = {
   shipments: Shipment[];
+  selectedShipmentIds: Set<string>;
+  onSelectedShipmentIdsChange: Dispatch<SetStateAction<Set<string>>>;
 };
 
 type SortButtonProps = {
@@ -92,11 +101,12 @@ function ProofOfDeliveryState({
   );
 }
 
-export function ShipmentsTable({ shipments }: ShipmentsTableProps) {
+export function ShipmentsTable({
+  shipments,
+  selectedShipmentIds,
+  onSelectedShipmentIdsChange,
+}: ShipmentsTableProps) {
   const [sortState, setSortState] = useState<SortState>(null);
-  const [selectedShipmentIds, setSelectedShipmentIds] = useState<Set<string>>(
-    () => new Set(),
-  );
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -125,7 +135,7 @@ export function ShipmentsTable({ shipments }: ShipmentsTableProps) {
   }
 
   function toggleShipmentSelection(shipmentId: string) {
-    setSelectedShipmentIds((currentSelectedIds) => {
+    onSelectedShipmentIdsChange((currentSelectedIds) => {
       const nextSelectedIds = new Set(currentSelectedIds);
 
       if (nextSelectedIds.has(shipmentId)) {
@@ -190,7 +200,7 @@ export function ShipmentsTable({ shipments }: ShipmentsTableProps) {
   }, [areSomeVisibleShipmentsSelected]);
 
   function toggleVisibleShipmentsSelection() {
-    setSelectedShipmentIds((currentSelectedIds) => {
+    onSelectedShipmentIdsChange((currentSelectedIds) => {
       const nextSelectedIds = new Set(currentSelectedIds);
 
       const shouldDeselectVisibleShipments =
