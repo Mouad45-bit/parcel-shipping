@@ -15,6 +15,7 @@
         <module>config-server</module>
         <module>discovery-server</module>
         <module>api-gateway</module>
+        <module>shipments-service</module>
     </modules>
 
     <properties>

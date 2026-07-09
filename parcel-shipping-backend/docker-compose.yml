@@ -67,6 +67,58 @@ services:
     networks:
       - parcel-network
 
+  postgres:
+    image: postgres:17-alpine
+    container_name: parcel-postgres
+    hostname: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: parcel_shipping
+      POSTGRES_USER: parcel_user
+      POSTGRES_PASSWORD: parcel_password
+    volumes:
+      - parcel-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U parcel_user -d parcel_shipping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      parcel-network:
+        aliases:
+          - postgres
+
+  shipments-service:
+    build:
+      context: .
+      dockerfile: shipments-service/Dockerfile
+    container_name: parcel-shipments-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_APPLICATION_NAME: shipments-service
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+    depends_on:
+      config-server:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+    networks:
+      - parcel-network
+
 networks:
   parcel-network:
     driver: bridge
+
+volumes:
+  parcel-postgres-data:

@@ -7,6 +7,7 @@ COPY pom.xml ./pom.xml
 COPY config-server/pom.xml ./config-server/pom.xml
 COPY discovery-server/pom.xml ./discovery-server/pom.xml
 COPY api-gateway/pom.xml ./api-gateway/pom.xml
+COPY shipments-service/pom.xml ./shipments-service/pom.xml
 
 COPY api-gateway/src ./api-gateway/src
 

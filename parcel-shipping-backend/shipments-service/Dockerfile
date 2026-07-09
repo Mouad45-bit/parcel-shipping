@@ -9,9 +9,9 @@ COPY discovery-server/pom.xml ./discovery-server/pom.xml
 COPY api-gateway/pom.xml ./api-gateway/pom.xml
 COPY shipments-service/pom.xml ./shipments-service/pom.xml
 
-COPY discovery-server/src ./discovery-server/src
+COPY shipments-service/src ./shipments-service/src
 
-RUN mvn -pl discovery-server -am clean package -DskipTests
+RUN mvn -pl shipments-service -am clean package -DskipTests
 
 FROM eclipse-temurin:17-jre
 
@@ -21,8 +21,8 @@ RUN apt-get update \
     && apt-get install -y curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /workspace/discovery-server/target/discovery-server-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /workspace/shipments-service/target/shipments-service-0.0.1-SNAPSHOT.jar app.jar
 
-EXPOSE 8761
+EXPOSE 8081
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
