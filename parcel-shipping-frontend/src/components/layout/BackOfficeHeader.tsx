@@ -1,11 +1,20 @@
 import Link from "next/link";
-import { Menu, PackageCheck } from "lucide-react";
+import {
+  Menu,
+  PackageCheck,
+} from "lucide-react";
 
 type BackOfficeSection =
   | "statistics"
   | "shipments"
   | "tracking"
-  | "exports";
+  | "exports"
+  | "profile";
+
+type NavigationSection = Exclude<
+  BackOfficeSection,
+  "profile"
+>;
 
 type BackOfficeHeaderProps = {
   activeSection: BackOfficeSection;
@@ -14,7 +23,7 @@ type BackOfficeHeaderProps = {
 };
 
 const navigationItems: {
-  key: BackOfficeSection;
+  key: NavigationSection;
   label: string;
   href: string;
 }[] = [
@@ -45,7 +54,11 @@ export function BackOfficeHeader({
   userName = "Back Office User",
   userRole = "Operator",
 }: BackOfficeHeaderProps) {
-  const userInitial = userName.trim().charAt(0).toUpperCase() || "U";
+  const userInitial =
+    userName.trim().charAt(0).toUpperCase() || "U";
+
+  const isProfileActive =
+    activeSection === "profile";
 
   return (
     <header className="sticky top-0 z-50 border-b border-primary/20 bg-surface/95 backdrop-blur">
@@ -56,7 +69,10 @@ export function BackOfficeHeader({
               aria-hidden="true"
               className="flex size-10 shrink-0 items-center justify-center rounded-lg text-primary"
             >
-              <Menu size={24} strokeWidth={2.25} />
+              <Menu
+                size={24}
+                strokeWidth={2.25}
+              />
             </div>
 
             <div className="hidden min-w-0 items-center gap-4 sm:flex">
@@ -75,7 +91,9 @@ export function BackOfficeHeader({
                   Profile
                 </p>
 
-                <p className="text-sm font-semibold text-ink">{userRole}</p>
+                <p className="text-sm font-semibold text-ink">
+                  {userRole}
+                </p>
               </div>
             </div>
           </div>
@@ -86,7 +104,10 @@ export function BackOfficeHeader({
             className="flex items-center gap-2 text-primary"
           >
             <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
-              <PackageCheck size={23} strokeWidth={2.2} />
+              <PackageCheck
+                size={23}
+                strokeWidth={2.2}
+              />
             </span>
 
             <span className="hidden text-lg font-bold tracking-tight sm:block">
@@ -95,9 +116,25 @@ export function BackOfficeHeader({
           </Link>
 
           <div className="justify-self-end">
-            <span className="flex size-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-secondary">
+            <Link
+              href="/profile"
+              aria-label={`Open ${userName} profile`}
+              aria-current={
+                isProfileActive
+                  ? "page"
+                  : undefined
+              }
+              className={[
+                "flex size-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-secondary transition",
+                "hover:scale-105 hover:bg-primary/90",
+                "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
+                isProfileActive
+                  ? "ring-2 ring-primary ring-offset-2"
+                  : "",
+              ].join(" ")}
+            >
               {userInitial}
-            </span>
+            </Link>
           </div>
         </div>
 
@@ -107,13 +144,18 @@ export function BackOfficeHeader({
         >
           <div className="flex min-w-max items-center gap-1 rounded-lg border border-secondary bg-secondary/25 p-1">
             {navigationItems.map((item) => {
-              const isActive = item.key === activeSection;
+              const isActive =
+                item.key === activeSection;
 
               return (
                 <Link
                   key={item.key}
                   href={item.href}
-                  aria-current={isActive ? "page" : undefined}
+                  aria-current={
+                    isActive
+                      ? "page"
+                      : undefined
+                  }
                   className={[
                     "rounded-md px-4 py-2 text-sm font-semibold transition-colors",
                     isActive
