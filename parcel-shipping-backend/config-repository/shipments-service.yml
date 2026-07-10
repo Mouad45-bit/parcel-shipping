@@ -6,9 +6,9 @@ spring:
     name: shipments-service
 
   datasource:
-    url: jdbc:postgresql://postgres:5432/parcel_shipping
-    username: parcel_user
-    password: parcel_password
+    url: jdbc:postgresql://shipments-postgres:5432/shipments_db
+    username: shipments_user
+    password: shipments_password
 
   jpa:
     open-in-view: false
