@@ -6,7 +6,6 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from "react";
 import {
   ArrowDown,
@@ -16,45 +15,37 @@ import {
   FileWarning,
   Printer,
 } from "lucide-react";
+import type {
+  ShipmentSortKey,
+  ShipmentSortState,
+} from "@/features/shipments/api/shipments-api";
 import type { Shipment } from "@/features/shipments/types/shipment";
 import { formatShipmentDateTime } from "@/features/shipments/utils/shipment-utils";
 import { ShipmentStatusBadge } from "./ShipmentStatusBadge";
-
-type SortKey =
-  | "trackingCode"
-  | "dispatchDate"
-  | "status"
-  | "statusDate"
-  | "proofOfDelivery"
-  | "exportedAt";
-
-type SortDirection = "asc" | "desc";
-
-type SortState = {
-  key: SortKey;
-  direction: SortDirection;
-} | null;
 
 type ShipmentsTableProps = {
   shipments: Shipment[];
   selectedShipmentIds: Set<string>;
   onSelectedShipmentIdsChange: Dispatch<SetStateAction<Set<string>>>;
+  isLoading: boolean;
+  page: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  sortState: ShipmentSortState;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  onSortChange: (sortState: ShipmentSortState) => void;
 };
 
 type SortButtonProps = {
   label: string;
-  column: SortKey;
-  sortState: SortState;
-  onSort: (column: SortKey) => void;
+  column: ShipmentSortKey;
+  sortState: ShipmentSortState;
+  onSort: (column: ShipmentSortKey) => void;
 };
 
 const pageSizeOptions = [5, 10, 20];
-
-function getSortValue(shipment: Shipment, key: SortKey): string {
-  const value = shipment[key];
-
-  return value ?? "";
-}
 
 function SortButton({ label, column, sortState, onSort }: SortButtonProps) {
   const isActive = sortState?.key === column;
@@ -105,33 +96,38 @@ export function ShipmentsTable({
   shipments,
   selectedShipmentIds,
   onSelectedShipmentIdsChange,
+  isLoading,
+  page,
+  pageSize,
+  totalItems,
+  totalPages,
+  sortState,
+  onPageChange,
+  onPageSizeChange,
+  onSortChange,
 }: ShipmentsTableProps) {
-  const [sortState, setSortState] = useState<SortState>(null);
-  const [pageSize, setPageSize] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-
   const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 
-  function handleSort(nextSortKey: SortKey) {
-    setSortState((currentState) => {
-      if (!currentState || currentState.key !== nextSortKey) {
-        return {
-          key: nextSortKey,
-          direction: "asc",
-        };
-      }
+  function handleSort(nextSortKey: ShipmentSortKey) {
+    if (!sortState || sortState.key !== nextSortKey) {
+      onSortChange({
+        key: nextSortKey,
+        direction: "asc",
+      });
 
-      if (currentState.direction === "asc") {
-        return {
-          key: nextSortKey,
-          direction: "desc",
-        };
-      }
+      return;
+    }
 
-      return null;
-    });
+    if (sortState.direction === "asc") {
+      onSortChange({
+        key: nextSortKey,
+        direction: "desc",
+      });
 
-    setCurrentPage(1);
+      return;
+    }
+
+    onSortChange(null);
   }
 
   function toggleShipmentSelection(shipmentId: string) {
@@ -148,33 +144,9 @@ export function ShipmentsTable({
     });
   }
 
-  const sortedShipments = useMemo(() => {
-    if (!sortState) {
-      return shipments;
-    }
-
-    return [...shipments].sort((firstShipment, secondShipment) => {
-      const firstValue = getSortValue(firstShipment, sortState.key);
-      const secondValue = getSortValue(secondShipment, sortState.key);
-
-      const comparison = firstValue.localeCompare(secondValue, undefined, {
-        numeric: true,
-        sensitivity: "base",
-      });
-
-      return sortState.direction === "asc" ? comparison : -comparison;
-    });
-  }, [shipments, sortState]);
-
-  const totalPages = Math.max(1, Math.ceil(sortedShipments.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const pageStartIndex = (safeCurrentPage - 1) * pageSize;
-  const pageEndIndex = pageStartIndex + pageSize;
-  const visibleShipments = sortedShipments.slice(pageStartIndex, pageEndIndex);
-
   const visibleShipmentIds = useMemo(
-    () => visibleShipments.map((shipment) => shipment.id),
-    [visibleShipments],
+    () => shipments.map((shipment) => shipment.id),
+    [shipments],
   );
 
   const selectedCurrentShipmentCount = shipments.filter((shipment) =>
@@ -224,27 +196,27 @@ export function ShipmentsTable({
 
   const pendingPodExportCount = shipments.length - exportedPodCount;
 
-  const firstVisibleShipment =
-    sortedShipments.length === 0 ? 0 : pageStartIndex + 1;
+  const safeTotalPages = Math.max(1, totalPages);
+  const currentPageNumber = page + 1;
 
-  const lastVisibleShipment = Math.min(pageEndIndex, sortedShipments.length);
+  const firstVisibleShipment = totalItems === 0 ? 0 : page * pageSize + 1;
+  const lastVisibleShipment = Math.min((page + 1) * pageSize, totalItems);
 
   return (
     <section className="mt-8">
       <div className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-lg font-bold text-ink">
-            {shipments.length}{" "}
-            {shipments.length === 1 ? "Shipment" : "Shipments"}
+            {totalItems} {totalItems === 1 ? "Shipment" : "Shipments"}
           </p>
 
           <p className="mt-1 text-sm font-medium text-ink/55">
-            Selected: {selectedCurrentShipmentCount}
+            Selected on page: {selectedCurrentShipmentCount}
           </p>
         </div>
 
         <p className="text-sm font-semibold text-ink/70 sm:self-end">
-          POD exported: {exportedPodCount} / Pending export:{" "}
+          POD exported on page: {exportedPodCount} / Pending on page:{" "}
           {pendingPodExportCount}
         </p>
       </div>
@@ -325,7 +297,16 @@ export function ShipmentsTable({
           </thead>
 
           <tbody>
-            {visibleShipments.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-4 py-12 text-center text-sm font-semibold text-ink/60"
+                >
+                  Loading shipments...
+                </td>
+              </tr>
+            ) : shipments.length === 0 ? (
               <tr>
                 <td
                   colSpan={8}
@@ -335,7 +316,7 @@ export function ShipmentsTable({
                 </td>
               </tr>
             ) : (
-              visibleShipments.map((shipment) => {
+              shipments.map((shipment) => {
                 const isSelected = selectedShipmentIds.has(shipment.id);
 
                 return (
@@ -400,10 +381,7 @@ export function ShipmentsTable({
           Rows per page
           <select
             value={pageSize}
-            onChange={(event) => {
-              setPageSize(Number(event.target.value));
-              setCurrentPage(1);
-            }}
+            onChange={(event) => onPageSizeChange(Number(event.target.value))}
             className="h-10 cursor-pointer rounded-lg border border-border bg-surface px-3 text-sm font-semibold text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
           >
             {pageSizeOptions.map((option) => (
@@ -416,30 +394,27 @@ export function ShipmentsTable({
 
         <div className="flex items-center gap-4">
           <p className="text-sm text-ink/60">
-            Showing {firstVisibleShipment}-{lastVisibleShipment} of{" "}
-            {sortedShipments.length}
+            Showing {firstVisibleShipment}-{lastVisibleShipment} of {totalItems}
           </p>
 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
+              onClick={() => onPageChange(Math.max(page - 1, 0))}
+              disabled={page === 0 || isLoading}
               className="h-9 rounded-lg border border-border px-3 text-sm font-semibold text-ink transition hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
             >
               Previous
             </button>
 
             <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-secondary">
-              {safeCurrentPage}
+              {currentPageNumber}
             </span>
 
             <button
               type="button"
-              onClick={() =>
-                setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))
-              }
-              disabled={safeCurrentPage === totalPages}
+              onClick={() => onPageChange(Math.min(page + 1, safeTotalPages - 1))}
+              disabled={currentPageNumber >= safeTotalPages || isLoading}
               className="h-9 rounded-lg border border-border px-3 text-sm font-semibold text-ink transition hover:border-primary hover:text-primary disabled:pointer-events-none disabled:opacity-40 cursor-pointer"
             >
               Next

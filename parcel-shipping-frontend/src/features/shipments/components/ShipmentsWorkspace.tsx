@@ -3,14 +3,19 @@
 import { useMemo, useState } from "react";
 import { UserRound } from "lucide-react";
 import { PageCard } from "@/components/ui/PageCard";
-import { shipmentFixtures } from "@/features/shipments/data/shipment-fixtures";
+import {
+  type ShipmentSortState,
+} from "@/features/shipments/api/shipments-api";
+import { useShipments } from "@/features/shipments/hooks/useShipments";
 import {
   initialShipmentFilters,
   type ShipmentFilters,
 } from "@/features/shipments/types/shipment-filters";
-import { filterShipments } from "@/features/shipments/utils/shipment-utils";
 import { ShipmentsFilters } from "./ShipmentsFilters";
 import { ShipmentsTable } from "./ShipmentsTable";
+
+const selectedClient = "aasim";
+const selectedClientLabel = "Aasim";
 
 export function ShipmentsWorkspace() {
   const [filters, setFilters] = useState<ShipmentFilters>(
@@ -21,14 +26,42 @@ export function ShipmentsWorkspace() {
     () => new Set(),
   );
 
-  const filteredShipments = useMemo(
-    () => filterShipments(shipmentFixtures, filters),
-    [filters],
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortState, setSortState] = useState<ShipmentSortState>(null);
+
+  const shipmentQuery = useMemo(
+    () => ({
+      client: selectedClient,
+      page,
+      size: pageSize,
+      sortState,
+      ...filters,
+    }),
+    [filters, page, pageSize, sortState],
   );
 
-  const selectedFilteredShipmentCount = filteredShipments.filter((shipment) =>
-    selectedShipmentIds.has(shipment.id),
-  ).length;
+  const { data, isLoading, error } = useShipments(shipmentQuery);
+
+  function handleFiltersChange(nextFilters: ShipmentFilters) {
+    setFilters(nextFilters);
+    setPage(0);
+  }
+
+  function handleResetFilters() {
+    setFilters(initialShipmentFilters);
+    setPage(0);
+  }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize);
+    setPage(0);
+  }
+
+  function handleSortChange(nextSortState: ShipmentSortState) {
+    setSortState(nextSortState);
+    setPage(0);
+  }
 
   return (
     <PageCard className="p-5 sm:p-6 lg:p-7">
@@ -40,7 +73,7 @@ export function ShipmentsWorkspace() {
 
           <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-primary">
             <UserRound size={17} />
-            <span>Selected client: Aasim</span>
+            <span>Selected client: {selectedClientLabel}</span>
           </div>
         </div>
 
@@ -51,16 +84,31 @@ export function ShipmentsWorkspace() {
 
       <ShipmentsFilters
         filters={filters}
-        selectedShipmentCount={selectedFilteredShipmentCount}
-        onChange={setFilters}
-        onReset={() => setFilters(initialShipmentFilters)}
+        selectedShipmentCount={selectedShipmentIds.size}
+        onChange={handleFiltersChange}
+        onReset={handleResetFilters}
       />
 
-      <ShipmentsTable
-        shipments={filteredShipments}
-        selectedShipmentIds={selectedShipmentIds}
-        onSelectedShipmentIdsChange={setSelectedShipmentIds}
-      />
+      {error ? (
+        <div className="mt-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {error}
+        </div>
+      ) : (
+        <ShipmentsTable
+          shipments={data?.items ?? []}
+          selectedShipmentIds={selectedShipmentIds}
+          onSelectedShipmentIdsChange={setSelectedShipmentIds}
+          isLoading={isLoading}
+          page={data?.page ?? page}
+          pageSize={data?.size ?? pageSize}
+          totalItems={data?.totalItems ?? 0}
+          totalPages={data?.totalPages ?? 1}
+          sortState={sortState}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          onSortChange={handleSortChange}
+        />
+      )}
     </PageCard>
   );
 }
