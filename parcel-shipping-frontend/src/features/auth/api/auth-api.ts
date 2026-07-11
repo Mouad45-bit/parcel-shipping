@@ -1,4 +1,5 @@
 import type {
+  ChangePasswordRequest,
   LoginCredentials,
   LoginResponse,
 } from "@/features/auth/types/auth";
@@ -17,9 +18,32 @@ export class AuthenticationError extends Error {
   }
 }
 
+async function readResponseBody(
+  response: Response,
+): Promise<unknown> {
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType =
+    response.headers.get("content-type") ?? "";
+
+  if (!contentType.includes("application/json")) {
+    return null;
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
 function resolveErrorMessage(
   responseBody: unknown,
   status: number,
+  fallbackMessage: string,
+  unauthorizedMessage: string,
 ): string {
   if (
     typeof responseBody === "object" &&
@@ -29,24 +53,27 @@ function resolveErrorMessage(
     const errorResponse =
       responseBody as AuthenticationErrorResponse;
 
-    if (errorResponse.message) {
+    if (
+      typeof errorResponse.message === "string" &&
+      errorResponse.message.trim()
+    ) {
       return errorResponse.message;
     }
   }
 
   if (status === 401) {
-    return "Invalid username or password.";
+    return unauthorizedMessage;
   }
 
   if (status === 403) {
-    return "You are not allowed to access this back office.";
+    return "You are not allowed to perform this action.";
   }
 
   if (status === 503) {
     return "The authentication service is currently unavailable.";
   }
 
-  return "Unable to sign in. Please try again.";
+  return fallbackMessage;
 }
 
 export async function login(
@@ -64,15 +91,16 @@ export async function login(
     signal,
   });
 
-  const contentType = response.headers.get("content-type") ?? "";
-
-  const responseBody: unknown = contentType.includes("application/json")
-    ? await response.json()
-    : null;
+  const responseBody = await readResponseBody(response);
 
   if (!response.ok) {
     throw new AuthenticationError(
-      resolveErrorMessage(responseBody, response.status),
+      resolveErrorMessage(
+        responseBody,
+        response.status,
+        "Unable to sign in. Please try again.",
+        "Invalid username or password.",
+      ),
       response.status,
     );
   }
@@ -89,4 +117,61 @@ export async function login(
   }
 
   return responseBody as LoginResponse;
+}
+
+export async function changePassword(
+  request: ChangePasswordRequest,
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch("/api/auth/password", {
+    method: "PATCH",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(request),
+    cache: "no-store",
+    signal,
+  });
+
+  const responseBody = await readResponseBody(response);
+
+  if (!response.ok) {
+    throw new AuthenticationError(
+      resolveErrorMessage(
+        responseBody,
+        response.status,
+        "Unable to update your password. Please try again.",
+        "Your current password is incorrect or your session has expired.",
+      ),
+      response.status,
+    );
+  }
+}
+
+export async function logout(
+  signal?: AbortSignal,
+): Promise<void> {
+  const response = await fetch("/api/auth/logout", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+    cache: "no-store",
+    signal,
+  });
+
+  const responseBody = await readResponseBody(response);
+
+  if (!response.ok) {
+    throw new AuthenticationError(
+      resolveErrorMessage(
+        responseBody,
+        response.status,
+        "Unable to sign out. Please try again.",
+        "Your session has already expired.",
+      ),
+      response.status,
+    );
+  }
 }

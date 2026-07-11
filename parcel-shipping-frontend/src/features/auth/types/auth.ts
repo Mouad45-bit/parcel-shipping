@@ -19,3 +19,18 @@ export type LoginFormErrors = Partial<
 export type LoginResponse = {
   user: AuthUser;
 };
+
+export type ResetPasswordFormValues = {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+};
+
+export type ResetPasswordFormErrors = Partial<
+  Record<keyof ResetPasswordFormValues, string>
+>;
+
+export type ChangePasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+};
