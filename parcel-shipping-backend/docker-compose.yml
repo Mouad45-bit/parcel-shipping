@@ -157,6 +157,8 @@ services:
     environment:
       SPRING_APPLICATION_NAME: auth-service
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET must be set}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
     depends_on:
       config-server:
         condition: service_healthy
