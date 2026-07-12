@@ -1,5 +1,7 @@
 package com.parcelshipping.auth.config;
 
+import com.parcelshipping.auth.security.CookieBearerTokenResolver;
+import com.parcelshipping.auth.security.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -8,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -17,26 +20,32 @@ public class SecurityConfiguration {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(BCRYPT_STRENGTH);
+        return new BCryptPasswordEncoder(
+                BCRYPT_STRENGTH
+        );
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
-            HttpSecurity http
+            HttpSecurity http,
+            JwtDecoder jwtDecoder,
+            CookieBearerTokenResolver bearerTokenResolver,
+            RestAuthenticationEntryPoint authenticationEntryPoint
     ) throws Exception {
         http
                 /*
-                 * Le login ne peut pas encore fournir de jeton CSRF.
-                 * Les futures routes sensibles conserveront une
-                 * protection adaptée aux cookies d'authentification.
+                 * Le login reste public et ne possède pas encore
+                 * de token CSRF.
                  */
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers("/api/auth/login")
+                        .ignoringRequestMatchers(
+                                "/api/auth/login"
+                        )
                 )
 
                 /*
-                 * Aucun état d'authentification n'est conservé
-                 * dans une session HTTP côté serveur.
+                 * L'authentification repose uniquement sur le JWT.
+                 * Aucune session HTTP serveur n'est créée.
                  */
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(
@@ -44,10 +53,6 @@ public class SecurityConfiguration {
                         )
                 )
 
-                /*
-                 * Désactive les mécanismes d'authentification web
-                 * fournis par défaut par Spring Security.
-                 */
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 .logout(logout -> logout.disable())
@@ -60,18 +65,42 @@ public class SecurityConfiguration {
                         .permitAll()
 
                         .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/auth/me"
+                        )
+                        .authenticated()
+
+                        .requestMatchers(
                                 "/actuator/health",
                                 "/actuator/health/**",
                                 "/actuator/info"
                         )
                         .permitAll()
 
-                        /*
-                         * Les autres routes seront ouvertes
-                         * progressivement dans les étapes suivantes.
-                         */
                         .anyRequest()
                         .denyAll()
+                )
+
+                /*
+                 * Valide le JWT extrait du cookie et construit
+                 * l'Authentication placée dans le SecurityContext.
+                 */
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .bearerTokenResolver(
+                                bearerTokenResolver
+                        )
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder)
+                        )
+                        .authenticationEntryPoint(
+                                authenticationEntryPoint
+                        )
+                )
+
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(
+                                authenticationEntryPoint
+                        )
                 )
 
                 .headers(Customizer.withDefaults());

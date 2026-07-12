@@ -90,6 +90,21 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(InvalidSessionException.class)
+    public ResponseEntity<ApiErrorResponse>
+    handleInvalidSession(
+            InvalidSessionException exception,
+            HttpServletRequest request
+    ) {
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                "INVALID_SESSION",
+                exception.getMessage(),
+                request.getRequestURI(),
+                List.of()
+        );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse>
     handleUnexpectedError(
