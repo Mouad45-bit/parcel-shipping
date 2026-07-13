@@ -40,6 +40,9 @@ public class Shipment {
     @Column(name = "exported_at")
     private LocalDateTime exportedAt;
 
+    @Column(name = "destination", nullable = false, length = 120)
+    private String destination;
+
     protected Shipment() {
     }
 
@@ -73,5 +76,9 @@ public class Shipment {
 
     public LocalDateTime getExportedAt() {
         return exportedAt;
+    }
+
+    public String getDestination() {
+        return destination;
     }
 }

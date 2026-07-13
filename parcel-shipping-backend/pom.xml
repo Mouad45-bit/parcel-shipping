@@ -16,6 +16,7 @@
         <module>discovery-server</module>
         <module>api-gateway</module>
         <module>shipments-service</module>
+        <module>statistics-service</module>
         <module>auth-service</module>
     </modules>
 
