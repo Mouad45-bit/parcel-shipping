@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  FileDown,
+  RefreshCw,
   RotateCcw,
 } from "lucide-react";
 import { ShipmentFilterFields } from "@/features/shipments/components/ShipmentFilterFields";
@@ -10,19 +10,19 @@ import {
   type ShipmentFilters,
 } from "@/features/shipments/types/shipment-filters";
 
-type ShipmentsFiltersProps = {
+type StatisticsFiltersProps = {
   filters: ShipmentFilters;
-  selectedShipmentCount: number;
   onChange: (filters: ShipmentFilters) => void;
   onReset: () => void;
+  onRefresh: () => void;
 };
 
-export function ShipmentsFilters({
+export function StatisticsFilters({
   filters,
-  selectedShipmentCount,
   onChange,
   onReset,
-}: ShipmentsFiltersProps) {
+  onRefresh,
+}: StatisticsFiltersProps) {
   const hasActiveFilters = (
     Object.keys(
       initialShipmentFilters,
@@ -32,9 +32,6 @@ export function ShipmentsFilters({
       filters[key] !==
       initialShipmentFilters[key],
   );
-
-  const canExport =
-    selectedShipmentCount > 0;
 
   return (
     <form
@@ -46,11 +43,11 @@ export function ShipmentsFilters({
       <div className="flex justify-end gap-3">
         <button
           type="button"
-          disabled={!canExport}
-          className="inline-flex h-11 w-fit cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary bg-secondary px-4 text-sm font-semibold text-primary transition hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          onClick={onRefresh}
+          className="inline-flex h-11 w-fit cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary bg-secondary px-4 text-sm font-semibold text-primary transition hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
-          <FileDown size={17} />
-          Export
+          <RefreshCw size={17} />
+          Refresh
         </button>
 
         <button
@@ -65,7 +62,7 @@ export function ShipmentsFilters({
       </div>
 
       <ShipmentFilterFields
-        idPrefix="shipments"
+        idPrefix="statistics"
         filters={filters}
         onChange={onChange}
       />
