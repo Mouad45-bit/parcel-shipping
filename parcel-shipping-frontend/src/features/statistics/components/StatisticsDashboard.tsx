@@ -1,9 +1,7 @@
 "use client";
 
 import {
-  BarChart3,
   MapPinned,
-  PieChart,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -16,6 +14,10 @@ import {
   initialShipmentFilters,
   type ShipmentFilters,
 } from "@/features/shipments/types/shipment-filters";
+import { PodStatusChart } from "@/features/statistics/components/PodStatusChart";
+import { ShipmentStatusChart } from "@/features/statistics/components/ShipmentStatusChart";
+import { ShipmentsTimelineChart } from "@/features/statistics/components/ShipmentsTimelineChart";
+import { StatisticsChartCard } from "@/features/statistics/components/StatisticsChartCard";
 import { StatisticsFilters } from "@/features/statistics/components/StatisticsFilters";
 import { StatisticsSummary } from "@/features/statistics/components/StatisticsSummary";
 import { statisticsShipmentFixtures } from "@/features/statistics/data/statistics-fixtures";
@@ -31,41 +33,31 @@ type StatisticsDashboardProps = {
   onRefresh: () => void;
 };
 
-type VisualizationPlaceholderProps = {
-  icon: typeof PieChart;
-  title: string;
-  description: string;
-};
-
-function VisualizationPlaceholder({
-  icon: Icon,
-  title,
-  description,
-}: VisualizationPlaceholderProps) {
+function DestinationsMapPlaceholder() {
   return (
-    <section className="flex min-h-72 flex-col rounded-xl border border-border bg-surface p-5 shadow-sm">
-      <header className="flex items-center gap-3 border-b border-border pb-4">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary/55 text-primary">
-          <Icon size={20} />
+    <StatisticsChartCard
+      icon={MapPinned}
+      title="Shipment destinations"
+      description="Geographical distribution of shipment destinations."
+    >
+      <div className="flex h-[310px] flex-col items-center justify-center rounded-lg border border-dashed border-primary/20 bg-secondary/10 px-5 text-center">
+        <span className="flex size-12 items-center justify-center rounded-xl bg-secondary/55 text-primary">
+          <MapPinned
+            aria-hidden="true"
+            size={23}
+          />
         </span>
 
-        <div>
-          <h2 className="text-base font-bold text-ink">
-            {title}
-          </h2>
+        <p className="mt-4 text-sm font-bold text-ink">
+          Destination map
+        </p>
 
-          <p className="mt-0.5 text-xs text-ink/50">
-            {description}
-          </p>
-        </div>
-      </header>
-
-      <div className="flex flex-1 items-center justify-center py-8">
-        <p className="text-sm font-medium text-ink/45">
-          Visualization will appear here.
+        <p className="mt-1 max-w-sm text-sm leading-6 text-ink/50">
+          The interactive Morocco map will be
+          added during frontend sub-phase 2.4.
         </p>
       </div>
-    </section>
+    </StatisticsChartCard>
   );
 }
 
@@ -79,18 +71,19 @@ export function StatisticsDashboard({
       initialShipmentFilters,
     );
 
-  const filteredShipments = useMemo(
-    () =>
-      filterStatisticsShipments(
-        statisticsShipmentFixtures,
-        selectedClient.value,
+  const filteredShipments =
+    useMemo(
+      () =>
+        filterStatisticsShipments(
+          statisticsShipmentFixtures,
+          selectedClient.value,
+          filters,
+        ),
+      [
         filters,
-      ),
-    [
-      filters,
-      selectedClient.value,
-    ],
-  );
+        selectedClient.value,
+      ],
+    );
 
   const summary = useMemo(
     () =>
@@ -101,7 +94,9 @@ export function StatisticsDashboard({
   );
 
   function handleResetFilters() {
-    setFilters(initialShipmentFilters);
+    setFilters(
+      initialShipmentFilters,
+    );
   }
 
   return (
@@ -134,14 +129,17 @@ export function StatisticsDashboard({
         </div>
 
         <p className="text-sm text-ink/60 sm:self-end">
-          Filter statistics by code, date, status, or proof of delivery.
+          Filter statistics by code, date,
+          status, or proof of delivery.
         </p>
       </div>
 
       <StatisticsFilters
         filters={filters}
         onChange={setFilters}
-        onReset={handleResetFilters}
+        onReset={
+          handleResetFilters
+        }
         onRefresh={onRefresh}
       />
 
@@ -150,29 +148,25 @@ export function StatisticsDashboard({
       />
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <VisualizationPlaceholder
-          icon={PieChart}
-          title="Shipment statuses"
-          description="Distribution of shipments by status."
+        <ShipmentStatusChart
+          shipments={
+            filteredShipments
+          }
         />
 
-        <VisualizationPlaceholder
-          icon={PieChart}
-          title="Proof of delivery statuses"
-          description="Distribution of available and missing POD."
+        <PodStatusChart
+          shipments={
+            filteredShipments
+          }
         />
 
-        <VisualizationPlaceholder
-          icon={BarChart3}
-          title="Shipments by period"
-          description="Evolution of shipment volume over time."
+        <ShipmentsTimelineChart
+          shipments={
+            filteredShipments
+          }
         />
 
-        <VisualizationPlaceholder
-          icon={MapPinned}
-          title="Shipment destinations"
-          description="Geographical distribution of destinations."
-        />
+        <DestinationsMapPlaceholder />
       </div>
     </PageCard>
   );

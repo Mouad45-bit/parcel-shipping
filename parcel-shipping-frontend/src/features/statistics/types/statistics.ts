@@ -20,3 +20,15 @@ export type StatisticsSummary = {
   exportedPodCount: number;
   pendingPodExportCount: number;
 };
+
+export type StatisticsDistributionItem = {
+  key: string;
+  label: string;
+  count: number;
+};
+
+export type StatisticsTimelinePoint = {
+  period: string;
+  label: string;
+  count: number;
+};
