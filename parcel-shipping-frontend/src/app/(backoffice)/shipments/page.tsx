@@ -1,10 +1,17 @@
 import { BackOfficeHeader } from "@/components/layout/BackOfficeHeader";
+import { requireCurrentUser } from "@/features/auth/server/auth-session";
 import { ShipmentsWorkspace } from "@/features/shipments/components/ShipmentsWorkspace";
 
-export default function ShipmentsPage() {
+export default async function ShipmentsPage() {
+  const currentUser =
+    await requireCurrentUser();
+
   return (
     <>
-      <BackOfficeHeader activeSection="shipments" />
+      <BackOfficeHeader
+        activeSection="shipments"
+        user={currentUser}
+      />
 
       <main
         id="main-content"

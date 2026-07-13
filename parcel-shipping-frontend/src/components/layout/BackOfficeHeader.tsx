@@ -3,6 +3,8 @@ import {
   Menu,
   PackageCheck,
 } from "lucide-react";
+import { userRoleLabels } from "@/features/auth/constants/user-role-labels";
+import type { AuthUser } from "@/features/auth/types/auth";
 
 type BackOfficeSection =
   | "statistics"
@@ -18,8 +20,7 @@ type NavigationSection = Exclude<
 
 type BackOfficeHeaderProps = {
   activeSection: BackOfficeSection;
-  userName?: string;
-  userRole?: string;
+  user: AuthUser;
 };
 
 const navigationItems: {
@@ -51,11 +52,13 @@ const navigationItems: {
 
 export function BackOfficeHeader({
   activeSection,
-  userName = "Back Office User",
-  userRole = "Operator",
+  user,
 }: BackOfficeHeaderProps) {
   const userInitial =
-    userName.trim().charAt(0).toUpperCase() || "U";
+    user.name.trim().charAt(0).toUpperCase() || "U";
+
+  const userRole =
+    userRoleLabels[user.role];
 
   const isProfileActive =
     activeSection === "profile";
@@ -82,7 +85,7 @@ export function BackOfficeHeader({
                 </p>
 
                 <p className="truncate text-sm font-semibold text-ink">
-                  {userName}
+                  {user.name}
                 </p>
               </div>
 
@@ -118,7 +121,7 @@ export function BackOfficeHeader({
           <div className="justify-self-end">
             <Link
               href="/profile"
-              aria-label={`Open ${userName} profile`}
+              aria-label={`Open ${user.name} profile`}
               aria-current={
                 isProfileActive
                   ? "page"

@@ -12,6 +12,7 @@ import { PageCard } from "@/components/ui/PageCard";
 import { LogoutConfirmationModal } from "@/features/auth/components/LogoutConfirmationModal";
 import { ResetPasswordModal } from "@/features/auth/components/ResetPasswordModal";
 import type { AuthUser } from "@/features/auth/types/auth";
+import { userRoleLabels } from "@/features/auth/constants/user-role-labels";
 
 type ProfileWorkspaceProps = {
   user: AuthUser;
@@ -21,11 +22,6 @@ type ProfileInformationRowProps = {
   icon: typeof UserRound;
   label: string;
   value: string;
-};
-
-const roleLabels: Record<AuthUser["role"], string> = {
-  ADMIN: "Administrator",
-  OPERATOR: "Operator",
 };
 
 function ProfileInformationRow({
@@ -106,7 +102,7 @@ export function ProfileWorkspace({
               <ProfileInformationRow
                 icon={ShieldCheck}
                 label="Role"
-                value={roleLabels[user.role]}
+                value={userRoleLabels[user.role]}
               />
             </div>
           </section>

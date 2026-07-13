@@ -46,6 +46,32 @@ export type ApiErrorResponse = {
   }>;
 };
 
+export class ShipmentsApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ShipmentsApiError";
+  }
+}
+
+async function readApiError(
+  response: Response,
+): Promise<ApiErrorResponse | null> {
+  const contentType = response.headers.get("content-type") ?? "";
+
+  if (!contentType.includes("application/json")) {
+    return null;
+  }
+
+  try {
+    return (await response.json()) as ApiErrorResponse;
+  } catch {
+    return null;
+  }
+}
+
 function appendIfPresent(
   searchParams: URLSearchParams,
   key: string,
@@ -91,9 +117,12 @@ export async function fetchShipments(
   });
 
   if (!response.ok) {
-    const error = (await response.json()) as ApiErrorResponse;
+    const error = await readApiError(response);
 
-    throw new Error(error.message || "Unable to load shipments.");
+    throw new ShipmentsApiError(
+      error?.message ?? "Unable to load shipments.",
+      response.status,
+    );
   }
 
   return response.json() as Promise<ShipmentPageResponse>;

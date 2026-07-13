@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
 import { PackageCheck } from "lucide-react";
 import { LoginForm } from "@/features/auth/components/LoginForm";
+import { redirect } from "next/navigation";
+import { getOptionalCurrentUser } from "@/features/auth/server/auth-session";
 
 export const metadata: Metadata = {
   title: "Sign in | Parcel Shipping",
   description: "Sign in to the Parcel Shipping back-office.",
 };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const currentUser =
+    await getOptionalCurrentUser();
+
+  if (currentUser) {
+    redirect("/shipments");
+  }
+  
   return (
     <main className="flex min-h-screen items-center justify-center bg-page px-4 py-8 text-ink sm:px-6">
       <section className="w-full max-w-md rounded-2xl border border-border bg-surface px-6 py-8 shadow-sm sm:px-10 sm:py-10">

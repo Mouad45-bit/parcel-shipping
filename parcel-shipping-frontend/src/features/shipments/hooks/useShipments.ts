@@ -1,11 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
 import {
   fetchShipments,
+  ShipmentsApiError,
   type ShipmentPageResponse,
   type ShipmentQuery,
 } from "@/features/shipments/api/shipments-api";
+
+type SettledShipmentsState = {
+  queryKey: string | null;
+  data: ShipmentPageResponse | null;
+  error: string | null;
+};
 
 type UseShipmentsState = {
   data: ShipmentPageResponse | null;
@@ -13,27 +25,43 @@ type UseShipmentsState = {
   error: string | null;
 };
 
-export function useShipments(query: ShipmentQuery): UseShipmentsState {
-  const [state, setState] = useState<UseShipmentsState>({
-    data: null,
-    isLoading: true,
-    error: null,
-  });
+export function useShipments(
+  query: ShipmentQuery,
+): UseShipmentsState {
+  const router = useRouter();
+
+  /*
+   * Identifie précisément la requête actuellement demandée.
+   * Toutes les propriétés de ShipmentQuery sont sérialisables.
+   */
+  const queryKey = useMemo(
+    () => JSON.stringify(query),
+    [query],
+  );
+
+  /*
+   * Contient uniquement le résultat de la dernière requête terminée.
+   * L'état de chargement sera dérivé de queryKey.
+   */
+  const [settledState, setSettledState] =
+    useState<SettledShipmentsState>({
+      queryKey: null,
+      data: null,
+      error: null,
+    });
 
   useEffect(() => {
-    const abortController = new AbortController();
+    const abortController =
+      new AbortController();
 
-    setState((currentState) => ({
-      ...currentState,
-      isLoading: true,
-      error: null,
-    }));
-
-    fetchShipments(query, abortController.signal)
+    fetchShipments(
+      query,
+      abortController.signal,
+    )
       .then((data) => {
-        setState({
+        setSettledState({
+          queryKey,
           data,
-          isLoading: false,
           error: null,
         });
       })
@@ -42,9 +70,18 @@ export function useShipments(query: ShipmentQuery): UseShipmentsState {
           return;
         }
 
-        setState({
+        if (
+          error instanceof ShipmentsApiError &&
+          error.status === 401
+        ) {
+          router.replace("/login");
+          router.refresh();
+          return;
+        }
+
+        setSettledState({
+          queryKey,
           data: null,
-          isLoading: false,
           error:
             error instanceof Error
               ? error.message
@@ -55,7 +92,22 @@ export function useShipments(query: ShipmentQuery): UseShipmentsState {
     return () => {
       abortController.abort();
     };
-  }, [query]);
+  }, [query, queryKey, router]);
 
-  return state;
+  /*
+   * Tant que la requête terminée ne correspond pas à la requête
+   * actuelle, le hook est considéré comme étant en chargement.
+   */
+  const isCurrentQuerySettled =
+    settledState.queryKey === queryKey;
+
+  return {
+    data: isCurrentQuerySettled
+      ? settledState.data
+      : null,
+    isLoading: !isCurrentQuerySettled,
+    error: isCurrentQuerySettled
+      ? settledState.error
+      : null,
+  };
 }

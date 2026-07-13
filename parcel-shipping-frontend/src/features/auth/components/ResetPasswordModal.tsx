@@ -1,22 +1,17 @@
 "use client";
 
-import {
-  type FormEvent,
-  useState,
-} from "react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Eye,
-  EyeOff,
-  KeyRound,
-} from "lucide-react";
+import { type FormEvent, useState } from "react";
+import { AlertCircle, CheckCircle2, Eye, EyeOff, KeyRound } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
-import { changePassword } from "@/features/auth/api/auth-api";
+import {
+  AuthenticationError,
+  changePassword,
+} from "@/features/auth/api/auth-api";
 import type {
   ResetPasswordFormErrors,
   ResetPasswordFormValues,
 } from "@/features/auth/types/auth";
+import { useRouter } from "next/navigation";
 
 type ResetPasswordModalProps = {
   isOpen: boolean;
@@ -48,30 +43,22 @@ function validatePasswordForm(
   const errors: ResetPasswordFormErrors = {};
 
   if (!values.currentPassword) {
-    errors.currentPassword =
-      "Current password is required.";
+    errors.currentPassword = "Current password is required.";
   }
 
   if (!values.newPassword) {
     errors.newPassword = "New password is required.";
   } else if (values.newPassword.length < 8) {
-    errors.newPassword =
-      "New password must contain at least 8 characters.";
-  } else if (
-    values.newPassword === values.currentPassword
-  ) {
+    errors.newPassword = "New password must contain at least 8 characters.";
+  } else if (values.newPassword === values.currentPassword) {
     errors.newPassword =
       "New password must be different from the current password.";
   }
 
   if (!values.confirmPassword) {
-    errors.confirmPassword =
-      "Password confirmation is required.";
-  } else if (
-    values.confirmPassword !== values.newPassword
-  ) {
-    errors.confirmPassword =
-      "The password confirmation does not match.";
+    errors.confirmPassword = "Password confirmation is required.";
+  } else if (values.confirmPassword !== values.newPassword) {
+    errors.confirmPassword = "The password confirmation does not match.";
   }
 
   return errors;
@@ -93,10 +80,7 @@ function PasswordField({
 
   return (
     <div>
-      <label
-        htmlFor={id}
-        className="text-sm font-semibold text-ink"
-      >
+      <label htmlFor={id} className="text-sm font-semibold text-ink">
         {label}
       </label>
 
@@ -113,9 +97,7 @@ function PasswordField({
           type={isVisible ? "text" : "password"}
           autoComplete={autoComplete}
           value={value}
-          onChange={(event) =>
-            onChange(event.target.value)
-          }
+          onChange={(event) => onChange(event.target.value)}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           placeholder={placeholder}
@@ -138,19 +120,12 @@ function PasswordField({
           }
           className="absolute right-4 top-1/2 inline-flex -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-ink/45 transition hover:text-primary focus:outline-none focus-visible:text-primary"
         >
-          {isVisible ? (
-            <EyeOff size={18} />
-          ) : (
-            <Eye size={18} />
-          )}
+          {isVisible ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
       </div>
 
       {error ? (
-        <p
-          id={errorId}
-          className="mt-1.5 text-xs font-medium text-red-600"
-        >
+        <p id={errorId} className="mt-1.5 text-xs font-medium text-red-600">
           {error}
         </p>
       ) : null}
@@ -162,25 +137,21 @@ export function ResetPasswordModal({
   isOpen,
   onClose,
 }: ResetPasswordModalProps) {
-  const [values, setValues] =
-    useState<ResetPasswordFormValues>(initialValues);
+  const router = useRouter();
 
-  const [errors, setErrors] =
-    useState<ResetPasswordFormErrors>({});
+  const [values, setValues] = useState<ResetPasswordFormValues>(initialValues);
 
-  const [visibleField, setVisibleField] =
-    useState<keyof ResetPasswordFormValues | null>(
-      null,
-    );
+  const [errors, setErrors] = useState<ResetPasswordFormErrors>({});
 
-  const [submitError, setSubmitError] =
-    useState<string | null>(null);
+  const [visibleField, setVisibleField] = useState<
+    keyof ResetPasswordFormValues | null
+  >(null);
 
-  const [isSubmitting, setIsSubmitting] =
-    useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const [isSuccessful, setIsSuccessful] =
-    useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isSuccessful, setIsSuccessful] = useState(false);
 
   function resetModalState() {
     setValues(initialValues);
@@ -199,10 +170,7 @@ export function ResetPasswordModal({
     onClose();
   }
 
-  function updateValue(
-    field: keyof ResetPasswordFormValues,
-    value: string,
-  ) {
+  function updateValue(field: keyof ResetPasswordFormValues, value: string) {
     setValues((currentValues) => ({
       ...currentValues,
       [field]: value,
@@ -216,9 +184,7 @@ export function ResetPasswordModal({
     setSubmitError(null);
   }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (isSubmitting) {
@@ -244,6 +210,12 @@ export function ResetPasswordModal({
 
       setIsSuccessful(true);
     } catch (error: unknown) {
+      if (error instanceof AuthenticationError && error.status === 401) {
+        router.replace("/login");
+        router.refresh();
+        return;
+      }
+
       setSubmitError(
         error instanceof Error
           ? error.message
@@ -277,8 +249,7 @@ export function ResetPasswordModal({
               </p>
 
               <p className="mt-1 text-sm leading-6 text-green-700">
-                Your account password has been changed
-                successfully.
+                Your account password has been changed successfully.
               </p>
             </div>
           </div>
@@ -302,10 +273,7 @@ export function ResetPasswordModal({
                 role="alert"
                 className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
               >
-                <AlertCircle
-                  size={18}
-                  className="mt-0.5 shrink-0"
-                />
+                <AlertCircle size={18} className="mt-0.5 shrink-0" />
 
                 <p>{submitError}</p>
               </div>
@@ -318,18 +286,12 @@ export function ResetPasswordModal({
               autoComplete="current-password"
               value={values.currentPassword}
               error={errors.currentPassword}
-              isVisible={
-                visibleField === "currentPassword"
-              }
+              isVisible={visibleField === "currentPassword"}
               autoFocus
-              onChange={(value) =>
-                updateValue("currentPassword", value)
-              }
+              onChange={(value) => updateValue("currentPassword", value)}
               onToggleVisibility={() =>
                 setVisibleField((currentField) =>
-                  currentField === "currentPassword"
-                    ? null
-                    : "currentPassword",
+                  currentField === "currentPassword" ? null : "currentPassword",
                 )
               }
             />
@@ -342,14 +304,10 @@ export function ResetPasswordModal({
               value={values.newPassword}
               error={errors.newPassword}
               isVisible={visibleField === "newPassword"}
-              onChange={(value) =>
-                updateValue("newPassword", value)
-              }
+              onChange={(value) => updateValue("newPassword", value)}
               onToggleVisibility={() =>
                 setVisibleField((currentField) =>
-                  currentField === "newPassword"
-                    ? null
-                    : "newPassword",
+                  currentField === "newPassword" ? null : "newPassword",
                 )
               }
             />
@@ -361,17 +319,11 @@ export function ResetPasswordModal({
               autoComplete="new-password"
               value={values.confirmPassword}
               error={errors.confirmPassword}
-              isVisible={
-                visibleField === "confirmPassword"
-              }
-              onChange={(value) =>
-                updateValue("confirmPassword", value)
-              }
+              isVisible={visibleField === "confirmPassword"}
+              onChange={(value) => updateValue("confirmPassword", value)}
               onToggleVisibility={() =>
                 setVisibleField((currentField) =>
-                  currentField === "confirmPassword"
-                    ? null
-                    : "confirmPassword",
+                  currentField === "confirmPassword" ? null : "confirmPassword",
                 )
               }
             />
@@ -392,15 +344,7 @@ export function ResetPasswordModal({
               disabled={isSubmitting}
               className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-bold text-secondary transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-60"
             >
-              {isSubmitting ? (
-                <>
-                  Updating...
-                </>
-              ) : (
-                <>
-                  Update password
-                </>
-              )}
+              {isSubmitting ? <>Updating...</> : <>Update password</>}
             </button>
           </footer>
         </form>
