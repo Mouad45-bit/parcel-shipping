@@ -19,132 +19,117 @@ import reactor.core.publisher.Mono;
 @EnableWebFluxSecurity
 public class GatewaySecurityConfiguration {
 
-    @Bean
-    public SecurityWebFilterChain securityWebFilterChain(
-            ServerHttpSecurity http,
-            ReactiveJwtDecoder gatewayJwtDecoder,
-            Converter<
-                    Jwt,
-                    Mono<AbstractAuthenticationToken>
-                    > gatewayJwtAuthenticationConverter,
-            CookieServerBearerTokenAuthenticationConverter
-                    bearerTokenConverter,
-            GatewayAuthenticationEntryPoint
-                    authenticationEntryPoint,
-            GatewayAccessDeniedHandler
-                    accessDeniedHandler
-    ) {
-        http
-                /*
-                 * Le Gateway valide l'authentification.
-                 *
-                 * Le CSRF de /password et /logout reste contrôlé
-                 * par auth-service, qui possède le repository
-                 * et l'endpoint /api/auth/csrf.
-                 */
-                .csrf(csrf -> csrf.disable())
+        @Bean
+        public SecurityWebFilterChain securityWebFilterChain(
+                        ServerHttpSecurity http,
+                        ReactiveJwtDecoder gatewayJwtDecoder,
+                        Converter<Jwt, Mono<AbstractAuthenticationToken>> gatewayJwtAuthenticationConverter,
+                        CookieServerBearerTokenAuthenticationConverter bearerTokenConverter,
+                        GatewayAuthenticationEntryPoint authenticationEntryPoint,
+                        GatewayAccessDeniedHandler accessDeniedHandler) {
+                http
+                                /*
+                                 * Le Gateway valide l'authentification.
+                                 *
+                                 * Le CSRF de /password et /logout reste contrôlé
+                                 * par auth-service, qui possède le repository
+                                 * et l'endpoint /api/auth/csrf.
+                                 */
+                                .csrf(csrf -> csrf.disable())
 
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
-                .logout(logout -> logout.disable())
-                .requestCache(cache -> cache.disable())
+                                .formLogin(form -> form.disable())
+                                .httpBasic(basic -> basic.disable())
+                                .logout(logout -> logout.disable())
+                                .requestCache(cache -> cache.disable())
 
-                .authorizeExchange(authorize -> authorize
-                        /*
-                         * Routes publiques d'authentification.
-                         */
-                        .pathMatchers(
-                                HttpMethod.POST,
-                                "/api/auth/login"
-                        )
-                        .permitAll()
+                                .authorizeExchange(authorize -> authorize
+                                                /*
+                                                 * Routes publiques d'authentification.
+                                                 */
+                                                .pathMatchers(
+                                                                HttpMethod.POST,
+                                                                "/api/auth/login")
+                                                .permitAll()
 
-                        .pathMatchers(
-                                HttpMethod.GET,
-                                "/api/auth/csrf"
-                        )
-                        .permitAll()
+                                                .pathMatchers(
+                                                                HttpMethod.GET,
+                                                                "/api/auth/csrf")
+                                                .permitAll()
 
-                        .pathMatchers(
-                                HttpMethod.POST,
-                                "/api/auth/logout"
-                        )
-                        .permitAll()
+                                                .pathMatchers(
+                                                                HttpMethod.POST,
+                                                                "/api/auth/logout")
+                                                .permitAll()
 
-                        /*
-                         * Routes d'authentification protégées.
-                         */
-                        .pathMatchers(
-                                HttpMethod.GET,
-                                "/api/auth/me"
-                        )
-                        .authenticated()
+                                                /*
+                                                 * Routes d'authentification protégées.
+                                                 */
+                                                .pathMatchers(
+                                                                HttpMethod.GET,
+                                                                "/api/auth/me")
+                                                .authenticated()
 
-                        .pathMatchers(
-                                HttpMethod.PATCH,
-                                "/api/auth/password"
-                        )
-                        .authenticated()
+                                                .pathMatchers(
+                                                                HttpMethod.PATCH,
+                                                                "/api/auth/password")
+                                                .authenticated()
 
-                        /*
-                         * Toutes les routes métier shipments
-                         * nécessitent un rôle back-office.
-                         */
-                        .pathMatchers(
-                                "/api/shipments/**"
-                        )
-                        .hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_OPERATOR"
-                        )
+                                                /*
+                                                 * Toutes les routes métier shipments
+                                                 * nécessitent un rôle back-office.
+                                                 */
+                                                .pathMatchers(
+                                                                "/api/shipments/**")
+                                                .hasAnyAuthority(
+                                                                "ROLE_ADMIN",
+                                                                "ROLE_OPERATOR")
 
-                        /*
-                         * Endpoints techniques du Gateway.
-                         */
-                        .pathMatchers(
-                                "/actuator/health",
-                                "/actuator/health/**",
-                                "/actuator/info"
-                        )
-                        .permitAll()
+                                                /*
+                                                 * Les statistiques sont accessibles uniquement
+                                                 * en lecture aux rôles du back-office.
+                                                 */
+                                                .pathMatchers(
+                                                                HttpMethod.GET,
+                                                                "/api/statistics/**")
+                                                .hasAnyAuthority(
+                                                                "ROLE_ADMIN",
+                                                                "ROLE_OPERATOR")
 
-                        /*
-                         * Refus explicite de toute route oubliée,
-                         * notamment les routes automatiques Eureka.
-                         */
-                        .anyExchange()
-                        .denyAll()
-                )
+                                                /*
+                                                 * Endpoints techniques du Gateway.
+                                                 */
+                                                .pathMatchers(
+                                                                "/actuator/health",
+                                                                "/actuator/health/**",
+                                                                "/actuator/info")
+                                                .permitAll()
 
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .bearerTokenConverter(
-                                bearerTokenConverter
-                        )
-                        .jwt(jwt -> jwt
-                                .jwtDecoder(
-                                        gatewayJwtDecoder
-                                )
-                                .jwtAuthenticationConverter(
-                                        gatewayJwtAuthenticationConverter
-                                )
-                        )
-                        .authenticationEntryPoint(
-                                authenticationEntryPoint
-                        )
-                        .accessDeniedHandler(
-                                accessDeniedHandler
-                        )
-                )
+                                                /*
+                                                 * Refus explicite de toute route oubliée,
+                                                 * notamment les routes automatiques Eureka.
+                                                 */
+                                                .anyExchange()
+                                                .denyAll())
 
-                .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint(
-                                authenticationEntryPoint
-                        )
-                        .accessDeniedHandler(
-                                accessDeniedHandler
-                        )
-                );
+                                .oauth2ResourceServer(oauth2 -> oauth2
+                                                .bearerTokenConverter(
+                                                                bearerTokenConverter)
+                                                .jwt(jwt -> jwt
+                                                                .jwtDecoder(
+                                                                                gatewayJwtDecoder)
+                                                                .jwtAuthenticationConverter(
+                                                                                gatewayJwtAuthenticationConverter))
+                                                .authenticationEntryPoint(
+                                                                authenticationEntryPoint)
+                                                .accessDeniedHandler(
+                                                                accessDeniedHandler))
 
-        return http.build();
-    }
+                                .exceptionHandling(exceptions -> exceptions
+                                                .authenticationEntryPoint(
+                                                                authenticationEntryPoint)
+                                                .accessDeniedHandler(
+                                                                accessDeniedHandler));
+
+                return http.build();
+        }
 }

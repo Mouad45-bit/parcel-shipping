@@ -27,6 +27,15 @@ spring:
                 # Le Gateway a déjà validé le JWT.
                 - RemoveRequestHeader=Cookie
 
+            - id: statistics-service
+              uri: lb://statistics-service
+              predicates:
+                - Path=/api/statistics/**
+                - Method=GET
+              filters:
+                # Le Gateway a déjà validé le JWT.
+                - RemoveRequestHeader=Cookie
+
 security:
   jwt:
     issuer: parcel-shipping-auth-service

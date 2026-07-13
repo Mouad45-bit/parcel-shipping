@@ -121,6 +121,44 @@ services:
     networks:
       - parcel-network
 
+  statistics-service:
+    build:
+      context: .
+      dockerfile: statistics-service/Dockerfile
+
+    container_name: parcel-statistics-service
+
+    ports:
+      - "8083"
+
+    environment:
+      SPRING_APPLICATION_NAME: statistics-service
+      SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+
+    depends_on:
+      config-server:
+        condition: service_healthy
+
+      discovery-server:
+        condition: service_healthy
+
+      shipments-service:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8083/actuator/health || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+    networks:
+      - parcel-network
+
   users-postgres:
     image: postgres:17-alpine
     container_name: parcel-users-postgres
