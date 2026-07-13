@@ -1,18 +1,17 @@
 "use client";
 
-import {
-  type ReactNode,
-  useEffect,
-  useRef,
-} from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+
+type ModalSize = "default" | "wide";
 
 type ModalProps = {
   isOpen: boolean;
   title: string;
   description: string;
   children: ReactNode;
+  size?: ModalSize;
   onClose: () => void;
 };
 
@@ -30,11 +29,11 @@ export function Modal({
   title,
   description,
   children,
+  size = "default",
   onClose,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElementRef =
-    useRef<HTMLElement | null>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
 
   useEffect(() => {
@@ -57,11 +56,12 @@ export function Modal({
 
     const focusTimer = window.setTimeout(() => {
       const autoFocusElement =
-        modalRef.current?.querySelector<HTMLElement>(
-          "[data-autofocus]",
-        );
+        modalRef.current?.querySelector<HTMLElement>("[data-autofocus]");
 
-      autoFocusElement?.focus();
+      const firstFocusableElement =
+        modalRef.current?.querySelector<HTMLElement>(focusableSelector);
+
+      (autoFocusElement ?? firstFocusableElement ?? modalRef.current)?.focus();
     }, 0);
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -76,9 +76,7 @@ export function Modal({
       }
 
       const focusableElements = Array.from(
-        modalRef.current.querySelectorAll<HTMLElement>(
-          focusableSelector,
-        ),
+        modalRef.current.querySelectorAll<HTMLElement>(focusableSelector),
       );
 
       if (focusableElements.length === 0) {
@@ -88,19 +86,12 @@ export function Modal({
       }
 
       const firstElement = focusableElements[0];
-      const lastElement =
-        focusableElements[focusableElements.length - 1];
+      const lastElement = focusableElements[focusableElements.length - 1];
 
-      if (
-        event.shiftKey &&
-        document.activeElement === firstElement
-      ) {
+      if (event.shiftKey && document.activeElement === firstElement) {
         event.preventDefault();
         lastElement.focus();
-      } else if (
-        !event.shiftKey &&
-        document.activeElement === lastElement
-      ) {
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
         event.preventDefault();
         firstElement.focus();
       }
@@ -110,10 +101,7 @@ export function Modal({
 
     return () => {
       window.clearTimeout(focusTimer);
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown,
-      );
+      document.removeEventListener("keydown", handleKeyDown);
 
       document.body.style.overflow = previousOverflow;
       previousActiveElementRef.current?.focus();
@@ -123,6 +111,8 @@ export function Modal({
   if (!isOpen || typeof document === "undefined") {
     return null;
   }
+
+  const widthClassName = size === "wide" ? "max-w-6xl" : "max-w-lg";
 
   return createPortal(
     <div
@@ -140,7 +130,10 @@ export function Modal({
         aria-labelledby="modal-title"
         aria-describedby="modal-description"
         tabIndex={-1}
-        className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-2xl border border-border bg-surface shadow-xl outline-none"
+        className={[
+          "max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-2xl border border-border bg-surface shadow-xl outline-none",
+          widthClassName,
+        ].join(" ")}
       >
         <header className="flex items-start justify-between gap-5 border-b border-border px-5 py-5 sm:px-6">
           <div>

@@ -32,3 +32,11 @@ export type StatisticsTimelinePoint = {
   label: string;
   count: number;
 };
+
+export type StatisticsDestinationItem = {
+  key: string;
+  label: string;
+  count: number;
+  latitude: number;
+  longitude: number;
+};

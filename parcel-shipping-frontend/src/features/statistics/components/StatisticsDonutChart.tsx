@@ -12,10 +12,9 @@ import { PieChart as PieChartIcon } from "lucide-react";
 import { StatisticsChartCard } from "@/features/statistics/components/StatisticsChartCard";
 import type { StatisticsDistributionItem } from "@/features/statistics/types/statistics";
 
-type ColoredDistributionItem =
-  StatisticsDistributionItem & {
-    color: string;
-  };
+type ColoredDistributionItem = StatisticsDistributionItem & {
+  color: string;
+};
 
 type StatisticsDonutChartProps = {
   title: string;
@@ -24,14 +23,84 @@ type StatisticsDonutChartProps = {
   centerLabel: string;
 };
 
+type DonutContentProps = {
+  data: ColoredDistributionItem[];
+  total: number;
+  centerLabel: string;
+  heightClassName: string;
+  innerRadius: number | string;
+  outerRadius: number | string;
+};
+
 const tooltipContentStyle = {
   border: "1px solid #eadfd8",
   borderRadius: "8px",
   backgroundColor: "#ffffff",
-  boxShadow:
-    "0 8px 24px rgba(6, 6, 6, 0.08)",
+  boxShadow: "0 8px 24px rgba(6, 6, 6, 0.08)",
   fontSize: "12px",
 };
+
+function DonutContent({
+  data,
+  total,
+  centerLabel,
+  heightClassName,
+  innerRadius,
+  outerRadius,
+}: DonutContentProps) {
+  return (
+    <div className={["relative w-full", heightClassName].join(" ")}>
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="count"
+            nameKey="label"
+            cx="50%"
+            cy="43%"
+            innerRadius={innerRadius}
+            outerRadius={outerRadius}
+            paddingAngle={2}
+            stroke="#ffffff"
+            strokeWidth={2}
+          >
+            {data.map((item) => (
+              <Cell key={item.key} fill={item.color} />
+            ))}
+          </Pie>
+
+          <Tooltip
+            contentStyle={tooltipContentStyle}
+            itemStyle={{
+              color: "#060606",
+              fontWeight: 600,
+            }}
+          />
+
+          <Legend
+            verticalAlign="bottom"
+            align="center"
+            iconType="circle"
+            iconSize={10}
+            wrapperStyle={{
+              fontSize: "13px",
+              fontWeight: 600,
+              color: "#060606",
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+
+      <div className="pointer-events-none absolute left-1/2 top-[43%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+        <span className="text-2xl font-bold text-ink">{total}</span>
+
+        <span className="mt-0.5 text-sm font-semibold uppercase tracking-wide text-ink/45">
+          {centerLabel}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function StatisticsDonutChart({
   title,
@@ -39,11 +108,7 @@ export function StatisticsDonutChart({
   data,
   centerLabel,
 }: StatisticsDonutChartProps) {
-  const total = data.reduce(
-    (sum, item) =>
-      sum + item.count,
-    0,
-  );
+  const total = data.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <StatisticsChartCard
@@ -51,67 +116,25 @@ export function StatisticsDonutChart({
       title={title}
       description={description}
       isEmpty={total === 0}
+      expandedContent={
+        <DonutContent
+          data={data}
+          total={total}
+          centerLabel={centerLabel}
+          heightClassName="h-[min(68vh,620px)]"
+          innerRadius={135}
+          outerRadius={205}
+        />
+      }
     >
-      <div className="relative h-[310px] w-full">
-        <ResponsiveContainer
-          width="100%"
-          height="100%"
-        >
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="count"
-              nameKey="label"
-              cx="50%"
-              cy="43%"
-              innerRadius={67}
-              outerRadius={101}
-              paddingAngle={2}
-              stroke="#ffffff"
-              strokeWidth={2}
-            >
-              {data.map((item) => (
-                <Cell
-                  key={item.key}
-                  fill={item.color}
-                />
-              ))}
-            </Pie>
-
-            <Tooltip
-              contentStyle={
-                tooltipContentStyle
-              }
-              itemStyle={{
-                color: "#060606",
-                fontWeight: 600,
-              }}
-            />
-
-            <Legend
-              verticalAlign="bottom"
-              align="center"
-              iconType="circle"
-              iconSize={10}
-              wrapperStyle={{
-                fontSize: "13px",
-                fontWeight: 600,
-                color: "#060606",
-              }}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-
-        <div className="pointer-events-none absolute left-1/2 top-[43%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
-          <span className="text-2xl font-bold text-ink">
-            {total}
-          </span>
-
-          <span className="mt-0.5 text-sm font-semibold uppercase tracking-wide text-ink/45">
-            {centerLabel}
-          </span>
-        </div>
-      </div>
+      <DonutContent
+        data={data}
+        total={total}
+        centerLabel={centerLabel}
+        heightClassName="h-[310px]"
+        innerRadius={67}
+        outerRadius={101}
+      />
 
       <ul className="sr-only">
         {data.map((item) => (

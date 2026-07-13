@@ -5,11 +5,13 @@ import type {
 import type { ShipmentFilters } from "@/features/shipments/types/shipment-filters";
 import { shipmentStatusLabels } from "@/features/shipments/utils/shipment-utils";
 import type {
+  StatisticsDestinationItem,
   StatisticsDistributionItem,
   StatisticsShipment,
   StatisticsSummary,
   StatisticsTimelinePoint,
 } from "@/features/statistics/types/statistics";
+import { destinationCoordinates } from "@/features/statistics/data/morocco-destinations";
 
 const shipmentStatusOrder: readonly ShipmentStatus[] = [
   "created",
@@ -308,4 +310,81 @@ export function buildShipmentsTimeline(
   }
 
   return timeline;
+}
+
+export function buildDestinationDistribution(
+  shipments: readonly StatisticsShipment[],
+): StatisticsDestinationItem[] {
+  const countsByDestination =
+    new Map<string, number>();
+
+  shipments.forEach((shipment) => {
+    const destination =
+      shipment.destination.trim();
+
+    if (!destination) {
+      return;
+    }
+
+    countsByDestination.set(
+      destination,
+      (
+        countsByDestination.get(
+          destination,
+        ) ?? 0
+      ) + 1,
+    );
+  });
+
+  return Array.from(
+    countsByDestination.entries(),
+  )
+    .map(([destination, count]) => {
+      const coordinates =
+        destinationCoordinates[
+          destination
+        ];
+
+      if (!coordinates) {
+        return null;
+      }
+
+      return {
+        key: destination
+          .normalize("NFD")
+          .replace(
+            /[\u0300-\u036f]/g,
+            "",
+          )
+          .toLowerCase()
+          .replace(
+            /[^a-z0-9]+/g,
+            "-",
+          )
+          .replace(
+            /(^-|-$)/g,
+            "",
+          ),
+        label: destination,
+        count,
+        latitude:
+          coordinates.latitude,
+        longitude:
+          coordinates.longitude,
+      };
+    })
+    .filter(
+      (
+        destination,
+      ): destination is StatisticsDestinationItem =>
+        destination !== null,
+    )
+    .sort(
+      (firstDestination, secondDestination) =>
+        secondDestination.count -
+          firstDestination.count ||
+        firstDestination.label.localeCompare(
+          secondDestination.label,
+        ),
+    );
 }

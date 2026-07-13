@@ -1,14 +1,7 @@
 "use client";
 
-import {
-  MapPinned,
-  UserRound,
-  UsersRound,
-} from "lucide-react";
-import {
-  useMemo,
-  useState,
-} from "react";
+import { UserRound, UsersRound } from "lucide-react";
+import { useMemo, useState } from "react";
 import { PageCard } from "@/components/ui/PageCard";
 import {
   initialShipmentFilters,
@@ -17,7 +10,6 @@ import {
 import { PodStatusChart } from "@/features/statistics/components/PodStatusChart";
 import { ShipmentStatusChart } from "@/features/statistics/components/ShipmentStatusChart";
 import { ShipmentsTimelineChart } from "@/features/statistics/components/ShipmentsTimelineChart";
-import { StatisticsChartCard } from "@/features/statistics/components/StatisticsChartCard";
 import { StatisticsFilters } from "@/features/statistics/components/StatisticsFilters";
 import { StatisticsSummary } from "@/features/statistics/components/StatisticsSummary";
 import { statisticsShipmentFixtures } from "@/features/statistics/data/statistics-fixtures";
@@ -26,6 +18,7 @@ import {
   filterStatisticsShipments,
   summarizeStatisticsShipments,
 } from "@/features/statistics/utils/statistics-utils";
+import { ShipmentDestinationsMap } from "@/features/statistics/components/ShipmentDestinationsMap";
 
 type StatisticsDashboardProps = {
   selectedClient: StatisticsClient;
@@ -33,70 +26,32 @@ type StatisticsDashboardProps = {
   onRefresh: () => void;
 };
 
-function DestinationsMapPlaceholder() {
-  return (
-    <StatisticsChartCard
-      icon={MapPinned}
-      title="Shipment destinations"
-      description="Geographical distribution of shipment destinations."
-    >
-      <div className="flex h-[310px] flex-col items-center justify-center rounded-lg border border-dashed border-primary/20 bg-secondary/10 px-5 text-center">
-        <span className="flex size-12 items-center justify-center rounded-xl bg-secondary/55 text-primary">
-          <MapPinned
-            aria-hidden="true"
-            size={23}
-          />
-        </span>
-
-        <p className="mt-4 text-sm font-bold text-ink">
-          Destination map
-        </p>
-
-        <p className="mt-1 max-w-sm text-sm leading-6 text-ink/50">
-          The interactive Morocco map will be
-          added during frontend sub-phase 2.4.
-        </p>
-      </div>
-    </StatisticsChartCard>
-  );
-}
-
 export function StatisticsDashboard({
   selectedClient,
   onChangeClient,
   onRefresh,
 }: StatisticsDashboardProps) {
-  const [filters, setFilters] =
-    useState<ShipmentFilters>(
-      initialShipmentFilters,
-    );
+  const [filters, setFilters] = useState<ShipmentFilters>(
+    initialShipmentFilters,
+  );
 
-  const filteredShipments =
-    useMemo(
-      () =>
-        filterStatisticsShipments(
-          statisticsShipmentFixtures,
-          selectedClient.value,
-          filters,
-        ),
-      [
-        filters,
+  const filteredShipments = useMemo(
+    () =>
+      filterStatisticsShipments(
+        statisticsShipmentFixtures,
         selectedClient.value,
-      ],
-    );
+        filters,
+      ),
+    [filters, selectedClient.value],
+  );
 
   const summary = useMemo(
-    () =>
-      summarizeStatisticsShipments(
-        filteredShipments,
-      ),
+    () => summarizeStatisticsShipments(filteredShipments),
     [filteredShipments],
   );
 
   function handleResetFilters() {
-    setFilters(
-      initialShipmentFilters,
-    );
+    setFilters(initialShipmentFilters);
   }
 
   return (
@@ -111,10 +66,7 @@ export function StatisticsDashboard({
             <div className="flex items-center gap-2 text-sm font-semibold text-primary">
               <UserRound size={17} />
 
-              <span>
-                Selected client:{" "}
-                {selectedClient.label}
-              </span>
+              <span>Selected client: {selectedClient.label}</span>
             </div>
 
             <button
@@ -129,44 +81,27 @@ export function StatisticsDashboard({
         </div>
 
         <p className="text-sm text-ink/60 sm:self-end">
-          Filter statistics by code, date,
-          status, or proof of delivery.
+          Filter statistics by code, date, status, or proof of delivery.
         </p>
       </div>
 
       <StatisticsFilters
         filters={filters}
         onChange={setFilters}
-        onReset={
-          handleResetFilters
-        }
+        onReset={handleResetFilters}
         onRefresh={onRefresh}
       />
 
-      <StatisticsSummary
-        summary={summary}
-      />
+      <StatisticsSummary summary={summary} />
 
       <div className="mt-5 grid gap-5 xl:grid-cols-2">
-        <ShipmentStatusChart
-          shipments={
-            filteredShipments
-          }
-        />
+        <ShipmentStatusChart shipments={filteredShipments} />
 
-        <PodStatusChart
-          shipments={
-            filteredShipments
-          }
-        />
+        <PodStatusChart shipments={filteredShipments} />
 
-        <ShipmentsTimelineChart
-          shipments={
-            filteredShipments
-          }
-        />
+        <ShipmentsTimelineChart shipments={filteredShipments} />
 
-        <DestinationsMapPlaceholder />
+        <ShipmentDestinationsMap shipments={filteredShipments} />
       </div>
     </PageCard>
   );
