@@ -6,9 +6,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 @Component
 public class CookieBearerTokenResolver
         implements BearerTokenResolver {
+
+    private static final Set<String> PUBLIC_AUTH_PATHS =
+            Set.of(
+                    "/api/auth/login",
+                    "/api/auth/logout",
+                    "/api/auth/csrf"
+            );
 
     private final JwtProperties jwtProperties;
 
@@ -22,6 +31,14 @@ public class CookieBearerTokenResolver
     public String resolve(
             HttpServletRequest request
     ) {
+        if (
+                PUBLIC_AUTH_PATHS.contains(
+                        request.getServletPath()
+                )
+        ) {
+            return null;
+        }
+
         Cookie[] cookies = request.getCookies();
 
         if (cookies == null) {

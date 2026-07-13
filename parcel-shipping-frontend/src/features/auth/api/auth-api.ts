@@ -1,5 +1,6 @@
 import type {
   ChangePasswordRequest,
+  CsrfTokenResponse,
   LoginCredentials,
   LoginResponse,
 } from "@/features/auth/types/auth";
@@ -76,6 +77,61 @@ function resolveErrorMessage(
   return fallbackMessage;
 }
 
+async function fetchCsrfToken(
+  signal?: AbortSignal,
+): Promise<CsrfTokenResponse> {
+  const response = await fetch("/api/auth/csrf", {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+    },
+    cache: "no-store",
+    signal,
+  });
+
+  const responseBody =
+    await readResponseBody(response);
+
+  if (!response.ok) {
+    throw new AuthenticationError(
+      resolveErrorMessage(
+        responseBody,
+        response.status,
+        "Unable to initialize the secure request.",
+        "Your authentication session has expired.",
+      ),
+      response.status,
+    );
+  }
+
+  if (
+    typeof responseBody !== "object" ||
+    responseBody === null ||
+    !("token" in responseBody) ||
+    !("headerName" in responseBody)
+  ) {
+    throw new AuthenticationError(
+      "The authentication service returned an invalid CSRF response.",
+      500,
+    );
+  }
+
+  const csrfResponse =
+    responseBody as CsrfTokenResponse;
+
+  if (
+    !csrfResponse.token ||
+    !csrfResponse.headerName
+  ) {
+    throw new AuthenticationError(
+      "The authentication service returned an invalid CSRF token.",
+      500,
+    );
+  }
+
+  return csrfResponse;
+}
+
 export async function login(
   credentials: LoginCredentials,
   signal?: AbortSignal,
@@ -123,18 +179,23 @@ export async function changePassword(
   request: ChangePasswordRequest,
   signal?: AbortSignal,
 ): Promise<void> {
+  const csrfToken =
+    await fetchCsrfToken(signal);
+
   const response = await fetch("/api/auth/password", {
     method: "PATCH",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      [csrfToken.headerName]: csrfToken.token,
     },
     body: JSON.stringify(request),
     cache: "no-store",
     signal,
   });
 
-  const responseBody = await readResponseBody(response);
+  const responseBody =
+    await readResponseBody(response);
 
   if (!response.ok) {
     throw new AuthenticationError(
@@ -152,16 +213,21 @@ export async function changePassword(
 export async function logout(
   signal?: AbortSignal,
 ): Promise<void> {
+  const csrfToken =
+    await fetchCsrfToken(signal);
+
   const response = await fetch("/api/auth/logout", {
     method: "POST",
     headers: {
       Accept: "application/json",
+      [csrfToken.headerName]: csrfToken.token,
     },
     cache: "no-store",
     signal,
   });
 
-  const responseBody = await readResponseBody(response);
+  const responseBody =
+    await readResponseBody(response);
 
   if (!response.ok) {
     throw new AuthenticationError(

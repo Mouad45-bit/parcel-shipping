@@ -38,3 +38,8 @@ export type ChangePasswordRequest = {
 export type CurrentUserResponse = {
   user: AuthUser;
 };
+
+export type CsrfTokenResponse = {
+  token: string;
+  headerName: string;
+};
