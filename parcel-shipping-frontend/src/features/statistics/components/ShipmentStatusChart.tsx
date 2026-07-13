@@ -1,16 +1,14 @@
 "use client";
 
-import {
-  useMemo,
-} from "react";
+import { useMemo } from "react";
 import type { ShipmentStatus } from "@/features/shipments/types/shipment";
 import { StatisticsDonutChart } from "@/features/statistics/components/StatisticsDonutChart";
-import type { StatisticsShipment } from "@/features/statistics/types/statistics";
+import type { StatisticsShipmentStatusCount } from "@/features/statistics/types/statistics";
 import { buildShipmentStatusDistribution } from "@/features/statistics/utils/statistics-utils";
 
 type ShipmentStatusChartProps = {
-  shipments:
-    readonly StatisticsShipment[];
+  items:
+    readonly StatisticsShipmentStatusCount[];
 };
 
 const statusColors: Record<
@@ -25,12 +23,12 @@ const statusColors: Record<
 };
 
 export function ShipmentStatusChart({
-  shipments,
+  items,
 }: ShipmentStatusChartProps) {
   const data = useMemo(
     () =>
       buildShipmentStatusDistribution(
-        shipments,
+        items,
       ).map((item) => ({
         ...item,
         color:
@@ -38,7 +36,7 @@ export function ShipmentStatusChart({
             item.key as ShipmentStatus
           ],
       })),
-    [shipments],
+    [items],
   );
 
   return (

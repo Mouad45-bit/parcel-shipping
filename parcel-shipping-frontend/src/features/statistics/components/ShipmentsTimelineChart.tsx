@@ -14,13 +14,13 @@ import {
 import { BarChart3 } from "lucide-react";
 import { StatisticsChartCard } from "@/features/statistics/components/StatisticsChartCard";
 import type {
-  StatisticsShipment,
+  StatisticsPeriodCount,
   StatisticsTimelinePoint,
 } from "@/features/statistics/types/statistics";
 import { buildShipmentsTimeline } from "@/features/statistics/utils/statistics-utils";
 
 type ShipmentsTimelineChartProps = {
-  shipments: readonly StatisticsShipment[];
+  periods: readonly StatisticsPeriodCount[];
 };
 
 type TimelineContentProps = {
@@ -146,11 +146,16 @@ function TimelineContent({
 }
 
 export function ShipmentsTimelineChart({
-  shipments,
+  periods,
 }: ShipmentsTimelineChartProps) {
   const chartId = useId().replaceAll(":", "");
 
-  const data = useMemo(() => buildShipmentsTimeline(shipments), [shipments]);
+  const data = useMemo(() => buildShipmentsTimeline(periods), [periods]);
+
+  const totalShipments = periods.reduce(
+    (total, period) => total + period.count,
+    0,
+  );
 
   return (
     <StatisticsChartCard
@@ -174,7 +179,7 @@ export function ShipmentsTimelineChart({
 
       <p className="sr-only">
         The chart contains {data.length} date periods and represents{" "}
-        {shipments.length} shipments.
+        {totalShipments} shipments.
       </p>
     </StatisticsChartCard>
   );

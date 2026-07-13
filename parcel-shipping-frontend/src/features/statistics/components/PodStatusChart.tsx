@@ -1,16 +1,14 @@
 "use client";
 
-import {
-  useMemo,
-} from "react";
+import { useMemo } from "react";
 import type { ProofOfDeliveryStatus } from "@/features/shipments/types/shipment";
 import { StatisticsDonutChart } from "@/features/statistics/components/StatisticsDonutChart";
-import type { StatisticsShipment } from "@/features/statistics/types/statistics";
+import type { StatisticsPodStatusCount } from "@/features/statistics/types/statistics";
 import { buildProofOfDeliveryDistribution } from "@/features/statistics/utils/statistics-utils";
 
 type PodStatusChartProps = {
-  shipments:
-    readonly StatisticsShipment[];
+  items:
+    readonly StatisticsPodStatusCount[];
 };
 
 const podStatusColors: Record<
@@ -22,20 +20,21 @@ const podStatusColors: Record<
 };
 
 export function PodStatusChart({
-  shipments,
+  items,
 }: PodStatusChartProps) {
   const data = useMemo(
     () =>
       buildProofOfDeliveryDistribution(
-        shipments,
+        items,
       ).map((item) => ({
         ...item,
         color:
           podStatusColors[
-            item.key as ProofOfDeliveryStatus
+            item.key as
+              ProofOfDeliveryStatus
           ],
       })),
-    [shipments],
+    [items],
   );
 
   return (
