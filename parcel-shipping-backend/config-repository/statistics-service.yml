@@ -1,0 +1,32 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: statistics-service
+
+  datasource:
+    url: jdbc:postgresql://shipments-postgres:5432/shipments_db
+    username: shipments_user
+    password: shipments_password
+
+    hikari:
+      read-only: true
+      minimum-idle: 1
+      maximum-pool-size: 5
+      connection-timeout: 5000
+
+  flyway:
+    enabled: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  info:
+    env:
+      enabled: true
