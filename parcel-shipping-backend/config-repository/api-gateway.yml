@@ -11,8 +11,7 @@ spring:
         webflux:
           discovery:
             locator:
-              enabled: true
-              lower-case-service-id: true
+              enabled: false
 
           routes:
             - id: auth-service
@@ -24,6 +23,18 @@ spring:
               uri: lb://shipments-service
               predicates:
                 - Path=/api/shipments/**
+              filters:
+                # Le Gateway a déjà validé le JWT.
+                - RemoveRequestHeader=Cookie
+
+security:
+  jwt:
+    issuer: parcel-shipping-auth-service
+    audience: parcel-shipping-backoffice
+    secret: ${AUTH_JWT_SECRET}
+
+    cookie:
+      name: parcel_access_token
 
 eureka:
   client:

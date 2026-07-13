@@ -1,32 +1,63 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
 
 const backendApiBaseUrl =
-  process.env.BACKEND_API_BASE_URL ?? "http://localhost:8080";
+  process.env.BACKEND_API_BASE_URL ??
+  "http://localhost:8080";
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+) {
   try {
-    const backendUrl = new URL("/api/shipments", backendApiBaseUrl);
+    const backendUrl = new URL(
+      "/api/shipments",
+      backendApiBaseUrl,
+    );
 
-    request.nextUrl.searchParams.forEach((value, key) => {
-      backendUrl.searchParams.append(key, value);
+    request.nextUrl.searchParams.forEach(
+      (value, key) => {
+        backendUrl.searchParams.append(
+          key,
+          value,
+        );
+      },
+    );
+
+    const requestHeaders = new Headers({
+      Accept: "application/json",
     });
+
+    const cookieHeader =
+      request.headers.get("cookie");
+
+    if (cookieHeader) {
+      requestHeaders.set(
+        "cookie",
+        cookieHeader,
+      );
+    }
 
     const response = await fetch(backendUrl, {
       method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
+      headers: requestHeaders,
       cache: "no-store",
     });
 
-    const responseBody = await response.text();
-    const contentType = response.headers.get("content-type") ?? "application/json";
+    const responseBody =
+      await response.text();
+
+    const responseHeaders = new Headers({
+      "content-type":
+        response.headers.get("content-type") ??
+        "application/json",
+      "cache-control": "no-store",
+    });
 
     return new NextResponse(responseBody, {
       status: response.status,
-      headers: {
-        "content-type": contentType,
-      },
+      headers: responseHeaders,
     });
   } catch {
     return NextResponse.json(
@@ -35,11 +66,17 @@ export async function GET(request: NextRequest) {
         status: 503,
         error: "Service Unavailable",
         code: "BACKEND_UNAVAILABLE",
-        message: "The shipments backend is currently unavailable.",
+        message:
+          "The shipments backend is currently unavailable.",
         path: "/api/shipments",
         fieldErrors: [],
       },
-      { status: 503 },
+      {
+        status: 503,
+        headers: {
+          "cache-control": "no-store",
+        },
+      },
     );
   }
 }
