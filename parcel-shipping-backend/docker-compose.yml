@@ -105,6 +105,8 @@ services:
     environment:
       SPRING_APPLICATION_NAME: shipments-service
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      SHIPMENT_PODS_STORAGE_ROOT: /data/pods
+      SHIPMENT_EXPORTS_STORAGE_ROOT: /data/exports
     depends_on:
       config-server:
         condition: service_healthy
@@ -120,6 +122,9 @@ services:
       start_period: 40s
     networks:
       - parcel-network
+    volumes:
+      - shipment-pods-data:/data/pods
+      - shipment-exports-data:/data/exports
 
   statistics-service:
     build:
@@ -225,3 +230,5 @@ networks:
 volumes:
   shipments-postgres-data:
   users-postgres-data:
+  shipment-pods-data:
+  shipment-exports-data:
