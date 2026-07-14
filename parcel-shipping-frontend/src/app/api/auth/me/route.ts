@@ -1,33 +1,21 @@
-import {
-  NextRequest,
-  NextResponse,
-} from "next/server";
+import { createBackendProxyResponse } from "@/lib/server/backend-proxy-response";
+import { NextRequest, NextResponse } from "next/server";
 
 const backendApiBaseUrl =
-  process.env.BACKEND_API_BASE_URL ??
-  "http://localhost:8080";
+  process.env.BACKEND_API_BASE_URL ?? "http://localhost:8080";
 
-export async function GET(
-  request: NextRequest,
-) {
+export async function GET(request: NextRequest) {
   try {
-    const backendUrl = new URL(
-      "/api/auth/me",
-      backendApiBaseUrl,
-    );
+    const backendUrl = new URL("/api/auth/me", backendApiBaseUrl);
 
     const requestHeaders = new Headers({
       Accept: "application/json",
     });
 
-    const cookieHeader =
-      request.headers.get("cookie");
+    const cookieHeader = request.headers.get("cookie");
 
     if (cookieHeader) {
-      requestHeaders.set(
-        "cookie",
-        cookieHeader,
-      );
+      requestHeaders.set("cookie", cookieHeader);
     }
 
     const response = await fetch(backendUrl, {
@@ -35,37 +23,17 @@ export async function GET(
       headers: requestHeaders,
       cache: "no-store",
     });
+    return await createBackendProxyResponse(response);
+  } catch (error: unknown) {
+    console.error("Unable to proxy user information request.", error);
 
-    const responseBody =
-      await response.text();
-
-    const responseHeaders = new Headers({
-      "cache-control": "no-store",
-    });
-
-    const contentType =
-      response.headers.get("content-type");
-
-    if (contentType) {
-      responseHeaders.set(
-        "content-type",
-        contentType,
-      );
-    }
-
-    return new NextResponse(responseBody, {
-      status: response.status,
-      headers: responseHeaders,
-    });
-  } catch {
     return NextResponse.json(
       {
         timestamp: new Date().toISOString(),
         status: 503,
         error: "Service Unavailable",
         code: "AUTHENTICATION_BACKEND_UNAVAILABLE",
-        message:
-          "The authentication service is currently unavailable.",
+        message: "The authentication service is currently unavailable.",
         path: "/api/auth/me",
         fieldErrors: [],
       },

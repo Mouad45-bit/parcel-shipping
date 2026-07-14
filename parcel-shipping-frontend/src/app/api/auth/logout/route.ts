@@ -1,71 +1,89 @@
-import { NextRequest, NextResponse } from "next/server";
+import {
+  NextRequest,
+  NextResponse,
+} from "next/server";
+import { createBackendProxyResponse } from "@/lib/server/backend-proxy-response";
 
 const backendApiBaseUrl =
-  process.env.BACKEND_API_BASE_URL ?? "http://localhost:8080";
+  process.env.BACKEND_API_BASE_URL ??
+  "http://localhost:8080";
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+) {
   try {
-    const backendUrl = new URL("/api/auth/logout", backendApiBaseUrl);
+    const backendUrl = new URL(
+      "/api/auth/logout",
+      backendApiBaseUrl,
+    );
 
-    const requestHeaders = new Headers({
-      Accept: "application/json",
-    });
+    const requestHeaders =
+      new Headers({
+        Accept: "application/json",
+      });
 
-    const cookieHeader = request.headers.get("cookie");
+    const cookieHeader =
+      request.headers.get("cookie");
 
     if (cookieHeader) {
-      requestHeaders.set("cookie", cookieHeader);
+      requestHeaders.set(
+        "cookie",
+        cookieHeader,
+      );
     }
 
-    const csrfTokenHeader = request.headers.get("x-xsrf-token");
+    const csrfTokenHeader =
+      request.headers.get(
+        "x-xsrf-token",
+      );
 
     if (csrfTokenHeader) {
-      requestHeaders.set("x-xsrf-token", csrfTokenHeader);
+      requestHeaders.set(
+        "x-xsrf-token",
+        csrfTokenHeader,
+      );
     }
 
-    const response = await fetch(backendUrl, {
-      method: "POST",
-      headers: requestHeaders,
-      cache: "no-store",
-    });
+    const backendResponse =
+      await fetch(backendUrl, {
+        method: "POST",
+        headers: requestHeaders,
+        cache: "no-store",
+      });
 
-    const responseBody = await response.text();
+    return await createBackendProxyResponse(
+      backendResponse,
+    );
+  } catch (error: unknown) {
+    /*
+     * Ne jamais masquer complètement l'erreur réelle
+     * dans les journaux serveur.
+     */
+    console.error(
+      "Unable to proxy authentication logout.",
+      error,
+    );
 
-    const responseHeaders = new Headers({
-      "cache-control": "no-store",
-    });
-
-    const contentType = response.headers.get("content-type");
-
-    if (contentType) {
-      responseHeaders.set("content-type", contentType);
-    }
-
-    const setCookieHeader = response.headers.get("set-cookie");
-
-    if (setCookieHeader) {
-      responseHeaders.set("set-cookie", setCookieHeader);
-    }
-
-    return new NextResponse(responseBody, {
-      status: response.status,
-      headers: responseHeaders,
-    });
-  } catch {
     return NextResponse.json(
       {
-        timestamp: new Date().toISOString(),
+        timestamp:
+          new Date().toISOString(),
         status: 503,
-        error: "Service Unavailable",
-        code: "AUTHENTICATION_BACKEND_UNAVAILABLE",
-        message: "The authentication service is currently unavailable.",
-        path: "/api/auth/logout",
+        error:
+          "Service Unavailable",
+        code:
+          "AUTHENTICATION_BACKEND_UNAVAILABLE",
+        message:
+          "The authentication service is currently unavailable.",
+        path:
+          "/api/auth/logout",
         fieldErrors: [],
       },
       {
         status: 503,
         headers: {
-          "cache-control": "no-store",
+          "cache-control":
+            "no-store",
         },
       },
     );

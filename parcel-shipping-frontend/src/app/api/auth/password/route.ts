@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createBackendProxyResponse } from "@/lib/server/backend-proxy-response";
 
 const backendApiBaseUrl =
   process.env.BACKEND_API_BASE_URL ?? "http://localhost:8080";
@@ -30,24 +31,10 @@ export async function PATCH(request: NextRequest) {
       body: await request.text(),
       cache: "no-store",
     });
+    return await createBackendProxyResponse(response);
+  } catch (error: unknown) {
+    console.error("Unable to proxy password update.", error);
 
-    const responseBody = await response.text();
-
-    const responseHeaders = new Headers({
-      "cache-control": "no-store",
-    });
-
-    const contentType = response.headers.get("content-type");
-
-    if (contentType) {
-      responseHeaders.set("content-type", contentType);
-    }
-
-    return new NextResponse(responseBody, {
-      status: response.status,
-      headers: responseHeaders,
-    });
-  } catch {
     return NextResponse.json(
       {
         timestamp: new Date().toISOString(),
