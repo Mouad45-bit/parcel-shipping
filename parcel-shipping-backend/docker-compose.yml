@@ -95,6 +95,26 @@ services:
         aliases:
           - shipments-postgres
 
+  pod-generator-service:
+    build:
+      context: ./pod-generator-service
+      dockerfile: Dockerfile
+    container_name: parcel-pod-generator-service
+    expose:
+      - "8090"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8090/actuator/health || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - parcel-network
+
   shipments-service:
     build:
       context: .
