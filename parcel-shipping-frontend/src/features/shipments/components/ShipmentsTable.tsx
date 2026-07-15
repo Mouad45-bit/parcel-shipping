@@ -11,8 +11,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  CheckCircle2,
-  FileWarning,
   Printer,
 } from "lucide-react";
 import type {
@@ -22,6 +20,7 @@ import type {
 import type { Shipment } from "@/features/shipments/types/shipment";
 import { formatShipmentDateTime } from "@/features/shipments/utils/shipment-utils";
 import { ShipmentStatusBadge } from "./ShipmentStatusBadge";
+import { ProofOfDeliveryState } from "./ProofOfDeliveryState";
 
 type ShipmentsTableProps = {
   shipments: Shipment[];
@@ -68,27 +67,6 @@ function SortButton({ label, column, sortState, onSort }: SortButtonProps) {
         <ArrowUpDown size={15} className="text-ink/35" />
       )}
     </button>
-  );
-}
-
-function ProofOfDeliveryState({
-  value,
-}: {
-  value: Shipment["proofOfDelivery"];
-}) {
-  const isAvailable = value === "available";
-
-  return (
-    <span
-      className={
-        isAvailable
-          ? "inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700"
-          : "inline-flex items-center gap-1.5 text-sm font-medium text-ink/55"
-      }
-    >
-      {isAvailable ? <CheckCircle2 size={16} /> : <FileWarning size={16} />}
-      {isAvailable ? "Available" : "Missing"}
-    </span>
   );
 }
 

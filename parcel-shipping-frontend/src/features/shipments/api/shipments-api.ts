@@ -50,13 +50,14 @@ export class ShipmentsApiError extends Error {
   constructor(
     message: string,
     public readonly status: number,
+    public readonly code?: string,
   ) {
     super(message);
     this.name = "ShipmentsApiError";
   }
 }
 
-async function readApiError(
+export async function readShipmentsApiError(
   response: Response,
 ): Promise<ApiErrorResponse | null> {
   const contentType = response.headers.get("content-type") ?? "";
@@ -117,11 +118,12 @@ export async function fetchShipments(
   });
 
   if (!response.ok) {
-    const error = await readApiError(response);
+    const error = await readShipmentsApiError(response);
 
     throw new ShipmentsApiError(
       error?.message ?? "Unable to load shipments.",
       response.status,
+      error?.code,
     );
   }
 
