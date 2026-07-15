@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { BackOfficeHeader } from "@/components/layout/BackOfficeHeader";
 import { requireCurrentUser } from "@/features/auth/server/auth-session";
 import { StatisticsWorkspace } from "@/features/statistics/components/StatisticsWorkspace";
+import { getSingleSearchParam } from "@/lib/navigation/search-params";
 
 export const metadata: Metadata = {
   title: "Statistics | Parcel Shipping",
@@ -24,13 +25,10 @@ export default async function StatisticsPage({
   const resolvedSearchParams =
     await searchParams;
 
-  const clientParameter =
-    resolvedSearchParams.client;
-
   const selectedClientValue =
-    Array.isArray(clientParameter)
-      ? clientParameter[0] ?? null
-      : clientParameter ?? null;
+  getSingleSearchParam(
+    resolvedSearchParams.client,
+  );
 
   return (
     <>

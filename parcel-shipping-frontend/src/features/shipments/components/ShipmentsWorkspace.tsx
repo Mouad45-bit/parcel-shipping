@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useMemo,
+  useState,
+} from "react";
 import { UserRound } from "lucide-react";
 import { PageCard } from "@/components/ui/PageCard";
-import {
-  type ShipmentSortState,
-} from "@/features/shipments/api/shipments-api";
+import { ClientSelectionGate } from "@/features/clients/components/ClientSelectionGate";
+import type { Client } from "@/features/clients/types/client";
+import type { ShipmentSortState } from "@/features/shipments/api/shipments-api";
 import { useShipments } from "@/features/shipments/hooks/useShipments";
 import {
   initialShipmentFilters,
@@ -14,51 +17,115 @@ import {
 import { ShipmentsFilters } from "./ShipmentsFilters";
 import { ShipmentsTable } from "./ShipmentsTable";
 
-const selectedClient = "aasim";
-const selectedClientLabel = "Aasim";
+type ShipmentsWorkspaceProps = {
+  selectedClientValue:
+    string | null;
+};
 
-export function ShipmentsWorkspace() {
-  const [filters, setFilters] = useState<ShipmentFilters>(
-    initialShipmentFilters,
+type SelectedClientShipmentsProps = {
+  selectedClient: Client;
+};
+
+export function ShipmentsWorkspace({
+  selectedClientValue,
+}: ShipmentsWorkspaceProps) {
+  return (
+    <ClientSelectionGate
+      selectedClientValue={
+        selectedClientValue
+      }
+      basePath="/shipments"
+    >
+      {({ selectedClient }) => (
+        <SelectedClientShipments
+          key={selectedClient.value}
+          selectedClient={
+            selectedClient
+          }
+        />
+      )}
+    </ClientSelectionGate>
   );
+}
 
-  const [selectedShipmentIds, setSelectedShipmentIds] = useState<Set<string>>(
+function SelectedClientShipments({
+  selectedClient,
+}: SelectedClientShipmentsProps) {
+  const [filters, setFilters] =
+    useState<ShipmentFilters>(
+      initialShipmentFilters,
+    );
+
+  const [
+    selectedShipmentIds,
+    setSelectedShipmentIds,
+  ] = useState<Set<string>>(
     () => new Set(),
   );
 
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(10);
-  const [sortState, setSortState] = useState<ShipmentSortState>(null);
+  const [page, setPage] =
+    useState(0);
+
+  const [pageSize, setPageSize] =
+    useState(10);
+
+  const [sortState, setSortState] =
+    useState<ShipmentSortState>(
+      null,
+    );
 
   const shipmentQuery = useMemo(
     () => ({
-      client: selectedClient,
+      client:
+        selectedClient.value,
       page,
       size: pageSize,
       sortState,
       ...filters,
     }),
-    [filters, page, pageSize, sortState],
+    [
+      filters,
+      page,
+      pageSize,
+      selectedClient.value,
+      sortState,
+    ],
   );
 
-  const { data, isLoading, error } = useShipments(shipmentQuery);
+  const {
+    data,
+    isLoading,
+    error,
+  } = useShipments(
+    shipmentQuery,
+  );
 
-  function handleFiltersChange(nextFilters: ShipmentFilters) {
+  function handleFiltersChange(
+    nextFilters: ShipmentFilters,
+  ) {
     setFilters(nextFilters);
     setPage(0);
   }
 
   function handleResetFilters() {
-    setFilters(initialShipmentFilters);
+    setFilters(
+      initialShipmentFilters,
+    );
+
     setPage(0);
   }
 
-  function handlePageSizeChange(nextPageSize: number) {
+  function handlePageSizeChange(
+    nextPageSize: number,
+  ) {
     setPageSize(nextPageSize);
     setPage(0);
   }
 
-  function handleSortChange(nextSortState: ShipmentSortState) {
+  function handleSortChange(
+    nextSortState:
+      ShipmentSortState,
+  ) {
     setSortState(nextSortState);
     setPage(0);
   }
@@ -73,20 +140,32 @@ export function ShipmentsWorkspace() {
 
           <div className="mt-2 flex items-center gap-2 text-sm font-semibold text-primary">
             <UserRound size={17} />
-            <span>Selected client: {selectedClientLabel}</span>
+
+            <span>
+              Selected client:{" "}
+              {selectedClient.label}
+            </span>
           </div>
         </div>
 
         <p className="text-sm text-ink/60 sm:self-end">
-          Filter shipments by code, date, status, or proof of delivery.
+          Filter shipments by code,
+          date, status, or proof of
+          delivery.
         </p>
       </div>
 
       <ShipmentsFilters
         filters={filters}
-        selectedShipmentCount={selectedShipmentIds.size}
-        onChange={handleFiltersChange}
-        onReset={handleResetFilters}
+        selectedShipmentCount={
+          selectedShipmentIds.size
+        }
+        onChange={
+          handleFiltersChange
+        }
+        onReset={
+          handleResetFilters
+        }
       />
 
       {error ? (
@@ -95,18 +174,34 @@ export function ShipmentsWorkspace() {
         </div>
       ) : (
         <ShipmentsTable
-          shipments={data?.items ?? []}
-          selectedShipmentIds={selectedShipmentIds}
-          onSelectedShipmentIdsChange={setSelectedShipmentIds}
+          shipments={
+            data?.items ?? []
+          }
+          selectedShipmentIds={
+            selectedShipmentIds
+          }
+          onSelectedShipmentIdsChange={
+            setSelectedShipmentIds
+          }
           isLoading={isLoading}
           page={data?.page ?? page}
-          pageSize={data?.size ?? pageSize}
-          totalItems={data?.totalItems ?? 0}
-          totalPages={data?.totalPages ?? 1}
+          pageSize={
+            data?.size ?? pageSize
+          }
+          totalItems={
+            data?.totalItems ?? 0
+          }
+          totalPages={
+            data?.totalPages ?? 1
+          }
           sortState={sortState}
           onPageChange={setPage}
-          onPageSizeChange={handlePageSizeChange}
-          onSortChange={handleSortChange}
+          onPageSizeChange={
+            handlePageSizeChange
+          }
+          onSortChange={
+            handleSortChange
+          }
         />
       )}
     </PageCard>
