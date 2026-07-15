@@ -1,15 +1,10 @@
 import type { ShipmentFilters } from "@/features/shipments/types/shipment-filters";
-import type { StatisticsClient } from "@/features/statistics/types/statistics-client";
 import type { StatisticsDashboardResponse } from "@/features/statistics/types/statistics";
 
 export type StatisticsDashboardQuery =
   ShipmentFilters & {
     client: string;
   };
-
-type StatisticsClientListResponse = {
-  items: StatisticsClient[];
-};
 
 type StatisticsApiErrorResponse = {
   timestamp?: string;
@@ -68,40 +63,6 @@ function appendIfPresent(
   }
 
   searchParams.set(key, value);
-}
-
-export async function fetchStatisticsClients(
-  signal?: AbortSignal,
-): Promise<StatisticsClient[]> {
-  const response = await fetch(
-    "/api/statistics/clients",
-    {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-      },
-      cache: "no-store",
-      signal,
-    },
-  );
-
-  if (!response.ok) {
-    const error =
-      await readApiError(response);
-
-    throw new StatisticsApiError(
-      error?.message ??
-        "Unable to load statistics clients.",
-      response.status,
-      error?.code,
-    );
-  }
-
-  const result =
-    await response.json() as
-      StatisticsClientListResponse;
-
-  return result.items;
 }
 
 export async function fetchStatisticsDashboard(

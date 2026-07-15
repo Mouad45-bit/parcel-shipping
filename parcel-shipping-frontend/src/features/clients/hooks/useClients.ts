@@ -7,20 +7,25 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
-  fetchStatisticsClients,
-  StatisticsApiError,
-} from "@/features/statistics/api/statistics-api";
-import type { StatisticsClient } from "@/features/statistics/types/statistics-client";
+  ClientApiError,
+  fetchClients,
+} from "@/features/clients/api/clients-api";
+import type { Client } from "@/features/clients/types/client";
 
-type UseStatisticsClientsState = {
-  clients: StatisticsClient[] | null;
+type UseClientsState = {
+  clients: Client[] | null;
   isLoading: boolean;
   error: string | null;
   refresh: () => void;
 };
 
-export function useStatisticsClients():
-  UseStatisticsClientsState {
+type ClientsState = {
+  clients: Client[] | null;
+  isLoading: boolean;
+  error: string | null;
+};
+
+export function useClients(): UseClientsState {
   const router = useRouter();
 
   const [
@@ -28,18 +33,20 @@ export function useStatisticsClients():
     setRequestVersion,
   ] = useState(0);
 
-  const [state, setState] = useState<{
-    clients:
-      StatisticsClient[] | null;
-    isLoading: boolean;
-    error: string | null;
-  }>({
-    clients: null,
-    isLoading: true,
-    error: null,
-  });
+  const [state, setState] =
+    useState<ClientsState>({
+      clients: null,
+      isLoading: true,
+      error: null,
+    });
 
   const refresh = useCallback(() => {
+    setState((currentState) => ({
+      ...currentState,
+      isLoading: true,
+      error: null,
+    }));
+
     setRequestVersion(
       (currentVersion) =>
         currentVersion + 1,
@@ -50,13 +57,7 @@ export function useStatisticsClients():
     const abortController =
       new AbortController();
 
-    setState((currentState) => ({
-      ...currentState,
-      isLoading: true,
-      error: null,
-    }));
-
-    fetchStatisticsClients(
+    fetchClients(
       abortController.signal,
     )
       .then((clients) => {
@@ -75,7 +76,7 @@ export function useStatisticsClients():
 
         if (
           error instanceof
-            StatisticsApiError &&
+            ClientApiError &&
           error.status === 401
         ) {
           router.replace("/login");
@@ -89,7 +90,7 @@ export function useStatisticsClients():
           error:
             error instanceof Error
               ? error.message
-              : "Unable to load statistics clients.",
+              : "Unable to load clients.",
         });
       });
 

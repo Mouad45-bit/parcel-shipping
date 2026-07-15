@@ -22,10 +22,10 @@ import { ShipmentsTimelineChart } from "@/features/statistics/components/Shipmen
 import { StatisticsFilters } from "@/features/statistics/components/StatisticsFilters";
 import { StatisticsSummary } from "@/features/statistics/components/StatisticsSummary";
 import { useStatisticsDashboard } from "@/features/statistics/hooks/useStatisticsDashboard";
-import type { StatisticsClient } from "@/features/statistics/types/statistics-client";
+import type { Client } from "@/features/clients/types/client";
 
 type StatisticsDashboardProps = {
-  selectedClient: StatisticsClient;
+  selectedClient: Client;
   onChangeClient: () => void;
 };
 

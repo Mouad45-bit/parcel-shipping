@@ -1,7 +1,5 @@
 package com.parcelshipping.statistics.service;
 
-import com.parcelshipping.statistics.api.dto.StatisticsClientListResponse;
-import com.parcelshipping.statistics.api.dto.StatisticsClientResponse;
 import com.parcelshipping.statistics.api.dto.StatisticsDashboardResponse;
 import com.parcelshipping.statistics.api.dto.StatisticsSearchRequest;
 import com.parcelshipping.statistics.api.dto.StatisticsSummaryResponse;
@@ -14,10 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
-import java.util.stream.Collectors;
 
 @Service
 public class StatisticsService {
@@ -34,27 +29,6 @@ public class StatisticsService {
 
         this.statisticsQueryBuilder =
                 statisticsQueryBuilder;
-    }
-
-    @Transactional(readOnly = true)
-    public StatisticsClientListResponse getClients() {
-        List<StatisticsClientResponse> clients =
-                statisticsRepository
-                        .findClients()
-                        .stream()
-                        .map(client ->
-                                new StatisticsClientResponse(
-                                        client,
-                                        formatClientLabel(
-                                                client
-                                        )
-                                )
-                        )
-                        .toList();
-
-        return new StatisticsClientListResponse(
-                clients
-        );
     }
 
     @Transactional(
@@ -124,38 +98,5 @@ public class StatisticsService {
                                 )
                 )
         );
-    }
-
-    private String formatClientLabel(
-            String client
-    ) {
-        return Arrays
-                .stream(
-                        client.split(
-                                "[\\s_-]+"
-                        )
-                )
-                .filter(part ->
-                        !part.isBlank()
-                )
-                .map(this::capitalize)
-                .collect(
-                        Collectors.joining(" ")
-                );
-    }
-
-    private String capitalize(
-            String value
-    ) {
-        if (value.isEmpty()) {
-            return value;
-        }
-
-        return value
-                .substring(0, 1)
-                .toUpperCase(Locale.ROOT)
-                + value
-                .substring(1)
-                .toLowerCase(Locale.ROOT);
-    }
+    }    
 }

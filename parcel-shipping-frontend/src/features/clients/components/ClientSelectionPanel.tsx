@@ -4,11 +4,12 @@ import { Search, SearchCode, UserRound, UsersRound } from "lucide-react";
 import Link from "next/link";
 import { type FormEvent, useMemo, useState } from "react";
 import { PageCard } from "@/components/ui/PageCard";
-import type { StatisticsClient } from "@/features/statistics/types/statistics-client";
+import type { Client } from "@/features/clients/types/client";
 
 type ClientSelectionPanelProps = {
-  clients: readonly StatisticsClient[];
-  onSelectClient: (client: StatisticsClient) => void;
+  clients: readonly Client[];
+  onSelectClient:
+    (client: Client) => void;
 };
 
 function normalizeSearchValue(value: string): string {
@@ -61,7 +62,7 @@ export function ClientSelectionPanel({
             </h1>
 
             <p className="mt-0.5 text-sm leading-5 text-ink/55">
-              Choose the client whose shipment statistics you want to view.
+              Choose a client to access the related back-office data.
             </p>
           </div>
         </div>
@@ -147,7 +148,7 @@ export function ClientSelectionPanel({
                   </span>
 
                   <span className="text-xs font-semibold text-primary opacity-0 transition group-hover:opacity-100 group-focus:opacity-100">
-                    View statistics
+                    Select client
                   </span>
                 </button>
               </li>

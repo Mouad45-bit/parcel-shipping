@@ -1,6 +1,5 @@
 package com.parcelshipping.statistics.api;
 
-import com.parcelshipping.statistics.api.dto.StatisticsClientListResponse;
 import com.parcelshipping.statistics.api.dto.StatisticsDashboardResponse;
 import com.parcelshipping.statistics.api.dto.StatisticsSearchRequest;
 import com.parcelshipping.statistics.service.StatisticsService;
@@ -25,14 +24,6 @@ public class StatisticsController {
             StatisticsService statisticsService
     ) {
         this.statisticsService = statisticsService;
-    }
-
-    @GetMapping("/clients")
-    public ResponseEntity<StatisticsClientListResponse>
-    getClients() {
-        return noStore(
-                statisticsService.getClients()
-        );
     }
 
     @GetMapping("/dashboard")

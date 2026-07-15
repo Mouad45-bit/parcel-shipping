@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 @Repository
@@ -22,23 +21,6 @@ public class StatisticsRepository {
             NamedParameterJdbcTemplate jdbcTemplate
     ) {
         this.jdbcTemplate = jdbcTemplate;
-    }
-
-    public List<String> findClients() {
-    String sql = """
-            SELECT client
-            FROM (
-                SELECT DISTINCT client
-                FROM shipments
-            ) AS distinct_clients
-            ORDER BY LOWER(client), client
-            """;
-            
-        return jdbcTemplate.queryForList(
-                sql,
-                Map.of(),
-                String.class
-        );
     }
 
     public boolean clientExists(

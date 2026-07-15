@@ -2,6 +2,7 @@ import {
   NextRequest,
   NextResponse,
 } from "next/server";
+import { createBackendProxyResponse } from "@/lib/server/backend-proxy-response";
 
 const backendApiBaseUrl =
   process.env.BACKEND_API_BASE_URL ??
@@ -12,7 +13,7 @@ export async function GET(
 ) {
   try {
     const backendUrl = new URL(
-      "/api/statistics/clients",
+      "/api/shipments/clients",
       backendApiBaseUrl,
     );
 
@@ -31,33 +32,22 @@ export async function GET(
       );
     }
 
-    const response = await fetch(
-      backendUrl,
-      {
+    const backendResponse =
+      await fetch(backendUrl, {
         method: "GET",
         headers: requestHeaders,
         cache: "no-store",
-      },
+      });
+
+    return await createBackendProxyResponse(
+      backendResponse,
+    );
+  } catch (error: unknown) {
+    console.error(
+      "Unable to proxy shipment clients request.",
+      error,
     );
 
-    const responseBody =
-      await response.text();
-
-    return new NextResponse(
-      responseBody,
-      {
-        status: response.status,
-        headers: {
-          "content-type":
-            response.headers.get(
-              "content-type",
-            ) ??
-            "application/json",
-          "cache-control": "no-store",
-        },
-      },
-    );
-  } catch {
     return NextResponse.json(
       {
         timestamp:
@@ -66,17 +56,18 @@ export async function GET(
         error:
           "Service Unavailable",
         code:
-          "STATISTICS_BACKEND_UNAVAILABLE",
+          "SHIPMENTS_BACKEND_UNAVAILABLE",
         message:
-          "The statistics service is currently unavailable.",
+          "The shipments service is currently unavailable.",
         path:
-          "/api/statistics/clients",
+          "/api/shipments/clients",
         fieldErrors: [],
       },
       {
         status: 503,
         headers: {
-          "cache-control": "no-store",
+          "cache-control":
+            "no-store",
         },
       },
     );

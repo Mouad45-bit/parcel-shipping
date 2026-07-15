@@ -1,4 +1,4 @@
-export type StatisticsClient = {
+export type Client = {
   value: string;
   label: string;
 };
