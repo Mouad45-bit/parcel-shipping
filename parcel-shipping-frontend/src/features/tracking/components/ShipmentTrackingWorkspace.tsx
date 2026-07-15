@@ -1,15 +1,12 @@
 "use client";
 
-import {
-  type FormEvent,
-  useEffect,
-  useState,
-} from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   LoaderCircle,
   PackageSearch,
   RefreshCw,
+  Search,
   SearchCode,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -23,8 +20,7 @@ import {
 } from "@/features/tracking/utils/shipment-tracking-utils";
 
 type ShipmentTrackingWorkspaceProps = {
-  initialTrackingCode:
-    string | null;
+  initialTrackingCode: string | null;
 };
 
 export function ShipmentTrackingWorkspace({
@@ -32,133 +28,93 @@ export function ShipmentTrackingWorkspace({
 }: ShipmentTrackingWorkspaceProps) {
   const router = useRouter();
 
-  const [
-    trackingCode,
-    setTrackingCode,
-  ] = useState(
+  const synchronizedTrackingCodeRef = useRef<string | null>(null);
+
+  const normalizedInitialTrackingCode = initialTrackingCode
+    ? normalizeTrackingCode(initialTrackingCode)
+    : "";
+
+  const [trackingCode, setTrackingCode] = useState(
+    normalizedInitialTrackingCode,
+  );
+
+  const [inputError, setInputError] = useState<string | null>(() =>
     initialTrackingCode
-      ? normalizeTrackingCode(
-          initialTrackingCode,
-        )
-      : "",
+      ? validateTrackingCode(normalizedInitialTrackingCode)
+      : null,
   );
 
-  const [
-    inputError,
-    setInputError,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const {
-    data,
-    requestedCode,
-    isLoading,
-    error,
-    track,
-    reset,
-  } = useShipmentTracking();
+  const { data, requestedCode, isLoading, error, track, reset } =
+    useShipmentTracking();
 
   useEffect(() => {
     if (!initialTrackingCode) {
+      synchronizedTrackingCodeRef.current = null;
+
       return;
     }
 
-    const normalizedCode =
-      normalizeTrackingCode(
-        initialTrackingCode,
-      );
+    const normalizedCode = normalizeTrackingCode(initialTrackingCode);
 
-    const validationError =
-      validateTrackingCode(
-        normalizedCode,
-      );
+    const validationError = validateTrackingCode(normalizedCode);
 
     if (validationError) {
-      setInputError(
-        validationError,
-      );
       return;
     }
 
-    if (
-      normalizedCode !==
-      requestedCode
-    ) {
-      setTrackingCode(
-        normalizedCode,
-      );
-
-      void track(
-        normalizedCode,
-      );
+    if (synchronizedTrackingCodeRef.current === normalizedCode) {
+      return;
     }
-  }, [
-    initialTrackingCode,
-    requestedCode,
-    track,
-  ]);
 
-  function handleSubmit(
-    event:
-      FormEvent<HTMLFormElement>,
-  ) {
+    synchronizedTrackingCodeRef.current = normalizedCode;
+
+    void track(normalizedCode);
+  }, [initialTrackingCode, track]);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (isLoading) {
       return;
     }
 
-    const validationError =
-      validateTrackingCode(
-        trackingCode,
-      );
+    const validationError = validateTrackingCode(trackingCode);
 
-    setInputError(
-      validationError,
-    );
+    setInputError(validationError);
 
     if (validationError) {
       return;
     }
 
-    const normalizedCode =
-      normalizeTrackingCode(
-        trackingCode,
-      );
+    const normalizedCode = normalizeTrackingCode(trackingCode);
 
-    setTrackingCode(
-      normalizedCode,
-    );
+    setTrackingCode(normalizedCode);
+
+    synchronizedTrackingCodeRef.current = normalizedCode;
 
     void track(normalizedCode);
 
     router.replace(
-      `/shipments/track?code=${encodeURIComponent(
-        normalizedCode,
-      )}`,
+      `/shipments/track?code=${encodeURIComponent(normalizedCode)}`,
     );
   }
 
   function handleReset() {
+    synchronizedTrackingCodeRef.current = null;
+
     reset();
     setTrackingCode("");
     setInputError(null);
 
-    router.replace(
-      "/shipments/track",
-    );
+    router.replace("/shipments/track");
   }
 
   return (
     <PageCard className="overflow-hidden">
-      <header className="border-b border-border bg-secondary/15 px-5 py-6 sm:px-7">
+      <header className="border-b border-border bg-ink/[0.035] px-5 py-6 sm:px-7">
         <div className="flex items-center gap-4">
           <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-secondary text-primary">
-            <PackageSearch
-              size={25}
-              aria-hidden="true"
-            />
+            <PackageSearch size={25} aria-hidden="true" />
           </span>
 
           <div>
@@ -167,18 +123,15 @@ export function ShipmentTrackingWorkspace({
             </h1>
 
             <p className="mt-1 text-sm leading-6 text-ink/55">
-              Enter a tracking code to retrieve the current shipment information.
+              Enter a tracking code to retrieve the current shipment
+              information.
             </p>
           </div>
         </div>
       </header>
 
       <div className="px-5 py-6 sm:px-7">
-        <form
-          onSubmit={handleSubmit}
-          noValidate
-          role="search"
-        >
+        <form onSubmit={handleSubmit} noValidate role="search">
           <label
             htmlFor="tracking-code"
             className="text-sm font-semibold text-ink"
@@ -188,7 +141,7 @@ export function ShipmentTrackingWorkspace({
 
           <div className="mt-2 flex flex-col gap-3 sm:flex-row">
             <div className="relative min-w-0 flex-1">
-              <SearchCode
+              <Search
                 size={19}
                 aria-hidden="true"
                 className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-primary"
@@ -199,24 +152,16 @@ export function ShipmentTrackingWorkspace({
                 name="trackingCode"
                 type="search"
                 value={trackingCode}
-                maxLength={
-                  trackingCodeMaximumLength
-                }
+                maxLength={trackingCodeMaximumLength}
                 autoComplete="off"
                 spellCheck={false}
-                aria-invalid={
-                  Boolean(inputError)
-                }
+                aria-invalid={Boolean(inputError)}
                 aria-describedby={
-                  inputError
-                    ? "tracking-code-error"
-                    : undefined
+                  inputError ? "tracking-code-error" : undefined
                 }
                 placeholder="Example: QB100000002MA"
                 onChange={(event) => {
-                  setTrackingCode(
-                    event.target.value,
-                  );
+                  setTrackingCode(event.target.value);
 
                   setInputError(null);
                 }}
@@ -230,19 +175,12 @@ export function ShipmentTrackingWorkspace({
               className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-bold text-secondary transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoading ? (
-                <LoaderCircle
-                  size={18}
-                  className="animate-spin"
-                />
+                <LoaderCircle size={18} className="animate-spin" />
               ) : (
-                <SearchCode
-                  size={18}
-                />
+                <SearchCode size={18} />
               )}
 
-              {isLoading
-                ? "Tracking..."
-                : "Track shipment"}
+              {isLoading ? "Tracking..." : "Track shipment"}
             </button>
           </div>
 
@@ -262,50 +200,36 @@ export function ShipmentTrackingWorkspace({
             role="alert"
             className={[
               "mt-6 rounded-lg border px-4 py-4",
-              error.kind ===
-              "not-found"
+              error.kind === "not-found"
                 ? "border-amber-200 bg-amber-50 text-amber-800"
                 : "border-red-200 bg-red-50 text-red-800",
             ].join(" ")}
           >
             <div className="flex items-start gap-3">
-              <AlertCircle
-                size={19}
-                className="mt-0.5 shrink-0"
-              />
+              <AlertCircle size={19} className="mt-0.5 shrink-0" />
 
               <div>
                 <p className="text-sm font-bold">
-                  {error.kind ===
-                  "not-found"
+                  {error.kind === "not-found"
                     ? "Shipment not found"
                     : "Unable to track shipment"}
                 </p>
 
-                <p className="mt-1 text-sm">
-                  {error.message}
-                </p>
+                <p className="mt-1 text-sm">{error.message}</p>
               </div>
             </div>
 
-            {error.kind ===
-            "unavailable" ? (
+            {error.kind === "unavailable" ? (
               <button
                 type="button"
                 onClick={() => {
-                  if (
-                    requestedCode
-                  ) {
-                    void track(
-                      requestedCode,
-                    );
+                  if (requestedCode) {
+                    void track(requestedCode);
                   }
                 }}
                 className="mt-4 inline-flex cursor-pointer items-center gap-2 text-sm font-bold"
               >
-                <RefreshCw
-                  size={16}
-                />
+                <RefreshCw size={16} />
                 Retry
               </button>
             ) : null}
@@ -314,9 +238,7 @@ export function ShipmentTrackingWorkspace({
 
         {data ? (
           <>
-            <ShipmentTrackingResult
-              shipment={data}
-            />
+            <ShipmentTrackingResult shipment={data} />
 
             <div className="mt-5 flex justify-end">
               <button

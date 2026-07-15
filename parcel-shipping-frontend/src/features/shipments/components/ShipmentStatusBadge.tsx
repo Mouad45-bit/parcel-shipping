@@ -4,6 +4,7 @@ import { shipmentStatusLabels } from "@/features/shipments/utils/shipment-utils"
 
 type ShipmentStatusBadgeProps = {
   status: ShipmentStatus;
+  uppercase?: boolean;
 };
 
 const statusStyles: Record<ShipmentStatus, string> = {
@@ -14,11 +15,16 @@ const statusStyles: Record<ShipmentStatus, string> = {
   returned: "bg-orange-50 text-orange-700 ring-orange-200",
 };
 
-export function ShipmentStatusBadge({ status }: ShipmentStatusBadgeProps) {
+export function ShipmentStatusBadge({
+  status,
+  uppercase = false,
+}: ShipmentStatusBadgeProps) {
   return (
     <span
       className={cn(
         "inline-flex rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset",
+        uppercase &&
+          "uppercase tracking-wide",
         statusStyles[status],
       )}
     >
