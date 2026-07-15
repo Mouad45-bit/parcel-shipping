@@ -37,3 +37,16 @@ management:
 shipment-storage:
   pods-root: ${SHIPMENT_PODS_STORAGE_ROOT:/data/pods}
   exports-root: ${SHIPMENT_EXPORTS_STORAGE_ROOT:/data/exports}
+
+pod-generator:
+  base-url: ${POD_GENERATOR_BASE_URL:http://pod-generator-service:8090}
+  connect-timeout: ${POD_GENERATOR_CONNECT_TIMEOUT:3s}
+  read-timeout: ${POD_GENERATOR_READ_TIMEOUT:20s}
+
+shipment-pod-seed:
+  enabled: ${SHIPMENT_POD_SEED_ENABLED:false}
+  minimum-count: ${SHIPMENT_POD_SEED_MINIMUM_COUNT:1}
+  maximum-count: ${SHIPMENT_POD_SEED_MAXIMUM_COUNT:3}
+  random-seed: ${SHIPMENT_POD_SEED_RANDOM_SEED:parcel-shipping-local}
+  batch-size: ${SHIPMENT_POD_SEED_BATCH_SIZE:100}
+  fail-fast: ${SHIPMENT_POD_SEED_FAIL_FAST:true}
