@@ -65,16 +65,18 @@ export function useStatisticsDashboard(
     const abortController =
       new AbortController();
 
-    setState((currentState) => ({
-      queryKey,
-      data:
-        currentState.queryKey ===
-        queryKey
-          ? currentState.data
-          : null,
-      isLoading: true,
-      error: null,
-    }));
+    queueMicrotask(() => {
+      setState((currentState) => ({
+        queryKey,
+        data:
+          currentState.queryKey ===
+          queryKey
+            ? currentState.data
+            : null,
+        isLoading: true,
+        error: null,
+      }));
+    });
 
     fetchStatisticsDashboard(
       query,

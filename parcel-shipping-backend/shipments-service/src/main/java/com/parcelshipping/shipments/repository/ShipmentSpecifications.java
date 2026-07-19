@@ -2,6 +2,7 @@ package com.parcelshipping.shipments.repository;
 
 import com.parcelshipping.shipments.domain.ProofOfDeliveryStatus;
 import com.parcelshipping.shipments.domain.Shipment;
+import com.parcelshipping.shipments.domain.ShipmentPod;
 import com.parcelshipping.shipments.domain.ShipmentStatus;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -90,6 +91,26 @@ public final class ShipmentSpecifications {
             }
 
             return builder.equal(root.get("proofOfDelivery"), proofOfDeliveryStatus);
+        };
+    }
+
+    public static Specification<Shipment> proofOfDeliveryCountEquals(ProofOfDeliveryStatus proofOfDeliveryStatus) {
+        return (root, query, builder) -> {
+            if (proofOfDeliveryStatus == null) {
+                return builder.conjunction();
+            }
+
+            var podCount = query.subquery(Long.class);
+            var podRoot = podCount.from(ShipmentPod.class);
+
+            podCount.select(builder.count(podRoot));
+            podCount.where(builder.equal(podRoot.get("shipmentId"), root.get("id")));
+
+            if (proofOfDeliveryStatus == ProofOfDeliveryStatus.AVAILABLE) {
+                return builder.greaterThan(podCount, 0L);
+            }
+
+            return builder.equal(podCount, 0L);
         };
     }
 }

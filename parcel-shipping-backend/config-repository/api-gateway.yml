@@ -27,6 +27,14 @@ spring:
                 # Le Gateway a déjà validé le JWT.
                 - RemoveRequestHeader=Cookie
 
+            - id: exports-service
+              uri: lb://shipments-service
+              predicates:
+                - Path=/api/exports/**
+              filters:
+                # Le Gateway a déjà validé le JWT.
+                - RemoveRequestHeader=Cookie
+
             - id: statistics-service
               uri: lb://statistics-service
               predicates:

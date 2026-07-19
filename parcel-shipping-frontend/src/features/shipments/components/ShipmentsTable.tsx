@@ -11,6 +11,8 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Download,
+  Eye,
   Printer,
 } from "lucide-react";
 import type {
@@ -35,6 +37,8 @@ type ShipmentsTableProps = {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   onSortChange: (sortState: ShipmentSortState) => void;
+  onViewPod: (shipment: Shipment) => void;
+  onExportPod: (shipment: Shipment) => void;
 };
 
 type SortButtonProps = {
@@ -83,6 +87,8 @@ export function ShipmentsTable({
   onPageChange,
   onPageSizeChange,
   onSortChange,
+  onViewPod,
+  onExportPod,
 }: ShipmentsTableProps) {
   const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -123,12 +129,15 @@ export function ShipmentsTable({
   }
 
   const visibleShipmentIds = useMemo(
-    () => shipments.map((shipment) => shipment.id),
+    () =>
+      shipments
+        .filter((shipment) => shipment.podCount > 0)
+        .map((shipment) => shipment.id),
     [shipments],
   );
 
   const selectedCurrentShipmentCount = shipments.filter((shipment) =>
-    selectedShipmentIds.has(shipment.id),
+    selectedShipmentIds.has(shipment.id) && shipment.podCount > 0,
   ).length;
 
   const areAllVisibleShipmentsSelected =
@@ -269,7 +278,7 @@ export function ShipmentsTable({
               </th>
 
               <th className="px-4 py-4 text-center font-bold text-ink">
-                Print
+                Actions
               </th>
             </tr>
           </thead>
@@ -303,13 +312,15 @@ export function ShipmentsTable({
                     className="border-b border-border/70 transition hover:bg-secondary/15"
                   >
                     <td className="px-4 py-4 text-center">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleShipmentSelection(shipment.id)}
-                        aria-label={`Select shipment ${shipment.trackingCode}`}
-                        className="size-4 cursor-pointer rounded border-border [accent-color:var(--color-primary)]"
-                      />
+                      {shipment.podCount > 0 ? (
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleShipmentSelection(shipment.id)}
+                          aria-label={`Select shipment ${shipment.trackingCode}`}
+                          className="size-4 cursor-pointer rounded border-border [accent-color:var(--color-primary)]"
+                        />
+                      ) : null}
                     </td>
 
                     <td className="px-4 py-4 text-sm font-bold text-primary">
@@ -329,22 +340,47 @@ export function ShipmentsTable({
                     </td>
 
                     <td className="px-4 py-4 text-center">
-                      <ProofOfDeliveryState value={shipment.proofOfDelivery} />
+                      <ProofOfDeliveryState
+                        value={shipment.podCount > 0 ? "available" : "missing"}
+                      />
                     </td>
 
                     <td className="px-4 py-4 text-sm text-ink/65">
                       {formatShipmentDateTime(shipment.exportedAt)}
                     </td>
 
-                    <td className="px-4 py-4 text-center">
-                      <button
-                        type="button"
-                        disabled
-                        aria-label={`Print shipment ${shipment.trackingCode}`}
-                        className="inline-flex size-9 cursor-not-allowed items-center justify-center rounded-lg text-primary/45"
-                      >
-                        <Printer size={18} />
-                      </button>
+                    <td className="px-4 py-4">
+                      {shipment.podCount > 0 ? (
+                        <div className="flex justify-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onViewPod(shipment)}
+                            aria-label={`View POD for shipment ${shipment.trackingCode}`}
+                            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50"
+                          >
+                            <Eye size={18} />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => onExportPod(shipment)}
+                            aria-label={`Export POD for shipment ${shipment.trackingCode}`}
+                            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50"
+                          >
+                            <Download size={18} />
+                          </button>
+
+                          <a
+                            href={`/shipments/${shipment.id}/print`}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Print shipment ${shipment.trackingCode}`}
+                            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50"
+                          >
+                            <Printer size={18} />
+                          </a>
+                        </div>
+                      ) : null}
                     </td>
                   </tr>
                 );

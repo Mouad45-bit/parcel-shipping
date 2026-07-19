@@ -81,4 +81,16 @@ public class Shipment {
     public String getDestination() {
         return destination;
     }
+
+    public void markExportedAt(
+            LocalDateTime exportedAt
+    ) {
+        if (exportedAt == null) {
+            throw new IllegalArgumentException(
+                    "exportedAt is required."
+            );
+        }
+
+        this.exportedAt = exportedAt;
+    }
 }

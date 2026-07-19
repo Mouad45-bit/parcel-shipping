@@ -1,6 +1,7 @@
 package com.parcelshipping.shipments.storage;
 
 import com.parcelshipping.shipments.config.ShipmentStorageProperties;
+import com.parcelshipping.shipments.error.PodFileNotFoundException;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,9 @@ import java.util.UUID;
 
 @Component
 public class ShipmentPodStorage {
+
+    private static final long MAXIMUM_POD_SIZE =
+            10L * 1024L * 1024L;
 
     private final Path root;
 
@@ -71,6 +75,40 @@ public class ShipmentPodStorage {
         return Files.isRegularFile(
                 resolve(storageKey)
         );
+    }
+
+    public byte[] read(
+            String storageKey
+    ) {
+        Path source = resolve(storageKey);
+
+        try {
+            if (!Files.isRegularFile(source)) {
+                throw new PodFileNotFoundException();
+            }
+
+            long size = Files.size(source);
+
+            if (
+                    size <= 0
+                            || size > MAXIMUM_POD_SIZE
+            ) {
+                throw new IllegalStateException(
+                        "Invalid POD file size."
+                );
+            }
+
+            return Files.readAllBytes(source);
+        } catch (
+                PodFileNotFoundException exception
+        ) {
+            throw exception;
+        } catch (IOException exception) {
+            throw new IllegalStateException(
+                    "Unable to read the POD image.",
+                    exception
+            );
+        }
     }
 
     public void write(

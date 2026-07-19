@@ -92,6 +92,66 @@ public class GlobalExceptionHandler {
                                 List.of());
         }
 
+        @ExceptionHandler(PodNotFoundException.class)
+        public ResponseEntity<ApiErrorResponse> handlePodNotFound(
+                        PodNotFoundException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.NOT_FOUND,
+                                "POD_NOT_FOUND",
+                                exception.getMessage(),
+                                request.getRequestURI(),
+                                List.of());
+        }
+
+        @ExceptionHandler(PodFileNotFoundException.class)
+        public ResponseEntity<ApiErrorResponse> handlePodFileNotFound(
+                        PodFileNotFoundException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.CONFLICT,
+                                "POD_FILE_NOT_FOUND",
+                                exception.getMessage(),
+                                request.getRequestURI(),
+                                List.of());
+        }
+
+        @ExceptionHandler(PodNotAvailableException.class)
+        public ResponseEntity<ApiErrorResponse> handlePodNotAvailable(
+                        PodNotAvailableException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.CONFLICT,
+                                "POD_NOT_AVAILABLE",
+                                exception.getMessage(),
+                                request.getRequestURI(),
+                                List.of());
+        }
+
+        @ExceptionHandler(ShipmentExportNotFoundException.class)
+        public ResponseEntity<ApiErrorResponse> handleExportNotFound(
+                        ShipmentExportNotFoundException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.NOT_FOUND,
+                                "EXPORT_NOT_FOUND",
+                                exception.getMessage(),
+                                request.getRequestURI(),
+                                List.of());
+        }
+
+        @ExceptionHandler(ShipmentExportFileNotFoundException.class)
+        public ResponseEntity<ApiErrorResponse> handleExportFileNotFound(
+                        ShipmentExportFileNotFoundException exception,
+                        HttpServletRequest request) {
+                return buildResponse(
+                                HttpStatus.CONFLICT,
+                                "EXPORT_FILE_NOT_FOUND",
+                                exception.getMessage(),
+                                request.getRequestURI(),
+                                List.of());
+        }
+
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ApiErrorResponse> handleUnexpectedError(
                         Exception exception,

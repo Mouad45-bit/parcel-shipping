@@ -77,7 +77,7 @@ function resolveErrorMessage(
   return fallbackMessage;
 }
 
-async function fetchCsrfToken(
+export async function fetchCsrfToken(
   signal?: AbortSignal,
 ): Promise<CsrfTokenResponse> {
   const response = await fetch("/api/auth/csrf", {

@@ -2,7 +2,10 @@ package com.parcelshipping.shipments.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
@@ -38,6 +41,14 @@ public class ShipmentExport {
 
     @Column(name = "archived_at")
     private Instant archivedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "shipment_id",
+            insertable = false,
+            updatable = false
+    )
+    private Shipment shipment;
 
     protected ShipmentExport() {
     }
@@ -144,6 +155,10 @@ public class ShipmentExport {
 
     public boolean isArchived() {
         return archivedAt != null;
+    }
+
+    public Shipment getShipment() {
+        return shipment;
     }
 
     private static UUID requireId(

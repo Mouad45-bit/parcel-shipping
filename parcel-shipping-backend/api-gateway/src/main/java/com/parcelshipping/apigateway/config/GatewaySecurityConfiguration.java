@@ -13,11 +13,24 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
+import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
 import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
 public class GatewaySecurityConfiguration {
+
+        @Bean
+        public CookieServerCsrfTokenRepository gatewayCsrfTokenRepository() {
+                CookieServerCsrfTokenRepository repository =
+                                CookieServerCsrfTokenRepository.withHttpOnlyFalse();
+
+                repository.setCookiePath("/");
+
+                return repository;
+        }
 
         @Bean
         public SecurityWebFilterChain securityWebFilterChain(
@@ -26,16 +39,27 @@ public class GatewaySecurityConfiguration {
                         Converter<Jwt, Mono<AbstractAuthenticationToken>> gatewayJwtAuthenticationConverter,
                         CookieServerBearerTokenAuthenticationConverter bearerTokenConverter,
                         GatewayAuthenticationEntryPoint authenticationEntryPoint,
-                        GatewayAccessDeniedHandler accessDeniedHandler) {
+                        GatewayAccessDeniedHandler accessDeniedHandler,
+                        CookieServerCsrfTokenRepository gatewayCsrfTokenRepository) {
                 http
                                 /*
-                                 * Le Gateway valide l'authentification.
-                                 *
-                                 * Le CSRF de /password et /logout reste contrôlé
-                                 * par auth-service, qui possède le repository
-                                 * et l'endpoint /api/auth/csrf.
+                                 * Les mutations métier utilisent un JWT en cookie :
+                                 * le Gateway valide donc le token CSRF avant
+                                 * de supprimer le header Cookie au routage.
                                  */
-                                .csrf(csrf -> csrf.disable())
+                                .csrf(csrf -> csrf
+                                                .csrfTokenRepository(
+                                                                gatewayCsrfTokenRepository)
+                                                .requireCsrfProtectionMatcher(
+                                                                new OrServerWebExchangeMatcher(
+                                                                                ServerWebExchangeMatchers
+                                                                                                .pathMatchers(
+                                                                                                                HttpMethod.POST,
+                                                                                                                "/api/shipments/**"),
+                                                                                ServerWebExchangeMatchers
+                                                                                                .pathMatchers(
+                                                                                                                HttpMethod.PATCH,
+                                                                                                                "/api/exports/**"))))
 
                                 .formLogin(form -> form.disable())
                                 .httpBasic(basic -> basic.disable())
@@ -80,6 +104,12 @@ public class GatewaySecurityConfiguration {
                                                  */
                                                 .pathMatchers(
                                                                 "/api/shipments/**")
+                                                .hasAnyAuthority(
+                                                                "ROLE_ADMIN",
+                                                                "ROLE_OPERATOR")
+
+                                                .pathMatchers(
+                                                                "/api/exports/**")
                                                 .hasAnyAuthority(
                                                                 "ROLE_ADMIN",
                                                                 "ROLE_OPERATOR")

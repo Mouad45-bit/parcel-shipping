@@ -9,13 +9,28 @@ import org.springframework.stereotype.Component;
 public class ShipmentMapper {
 
     public ShipmentResponse toResponse(Shipment shipment) {
+        return toResponse(
+                shipment,
+                shipment
+                        .getProofOfDelivery()
+                        .apiValue(),
+                0L
+        );
+    }
+
+    public ShipmentResponse toResponse(
+            Shipment shipment,
+            String proofOfDelivery,
+            long podCount
+    ) {
         return new ShipmentResponse(
                 shipment.getId(),
                 shipment.getTrackingCode(),
                 shipment.getDispatchDate(),
                 shipment.getStatus().apiValue(),
                 shipment.getStatusDate(),
-                shipment.getProofOfDelivery().apiValue(),
+                proofOfDelivery,
+                podCount,
                 shipment.getExportedAt());
     }
 
@@ -30,9 +45,9 @@ public class ShipmentMapper {
                 shipment.getDispatchDate(),
                 shipment.getStatus().apiValue(),
                 shipment.getStatusDate(),
-                shipment
-                        .getProofOfDelivery()
-                        .apiValue(),
+                podCount > 0
+                        ? "available"
+                        : "missing",
                 podCount);
     }
 }

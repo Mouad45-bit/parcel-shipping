@@ -18,6 +18,8 @@ import {
   trackingCodeMaximumLength,
   validateTrackingCode,
 } from "@/features/tracking/utils/shipment-tracking-utils";
+import { PodViewerModal } from "@/features/shipments/components/PodViewerModal";
+import type { ShipmentTracking } from "@/features/tracking/types/shipment-tracking";
 
 type ShipmentTrackingWorkspaceProps = {
   initialTrackingCode: string | null;
@@ -43,6 +45,8 @@ export function ShipmentTrackingWorkspace({
       ? validateTrackingCode(normalizedInitialTrackingCode)
       : null,
   );
+  const [viewerShipment, setViewerShipment] =
+    useState<ShipmentTracking | null>(null);
 
   const { data, requestedCode, isLoading, error, track, reset } =
     useShipmentTracking();
@@ -238,7 +242,10 @@ export function ShipmentTrackingWorkspace({
 
         {data ? (
           <>
-            <ShipmentTrackingResult shipment={data} />
+            <ShipmentTrackingResult
+              shipment={data}
+              onViewPod={() => setViewerShipment(data)}
+            />
 
             <div className="mt-5 flex justify-end">
               <button
@@ -252,6 +259,13 @@ export function ShipmentTrackingWorkspace({
           </>
         ) : null}
       </div>
+
+      <PodViewerModal
+        isOpen={viewerShipment !== null}
+        shipmentId={viewerShipment?.id ?? null}
+        trackingCode={viewerShipment?.trackingCode ?? null}
+        onClose={() => setViewerShipment(null)}
+      />
     </PageCard>
   );
 }

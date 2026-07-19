@@ -13,6 +13,7 @@ import type { ShipmentTracking } from "@/features/tracking/types/shipment-tracki
 
 type ShipmentTrackingResultProps = {
   shipment: ShipmentTracking;
+  onViewPod: () => void;
 };
 
 type InformationRowProps = {
@@ -41,6 +42,7 @@ function InformationRow({ icon: Icon, label, children }: InformationRowProps) {
 
 export function ShipmentTrackingResult({
   shipment,
+  onViewPod,
 }: ShipmentTrackingResultProps) {
   return (
     <section
@@ -85,7 +87,9 @@ export function ShipmentTrackingResult({
         </InformationRow>
 
         <InformationRow icon={FileImage} label="Proof of delivery">
-          <ProofOfDeliveryState value={shipment.proofOfDelivery} />
+          <ProofOfDeliveryState
+            value={shipment.podCount > 0 ? "available" : "missing"}
+          />
         </InformationRow>
 
         <InformationRow icon={FileImage} label="POD documents">
@@ -93,6 +97,27 @@ export function ShipmentTrackingResult({
           {shipment.podCount === 1 ? "document" : "documents"}
         </InformationRow>
       </div>
+
+      {shipment.podCount > 0 ? (
+        <div className="flex flex-wrap justify-end gap-3 border-t border-border px-5 py-4">
+          <button
+            type="button"
+            onClick={onViewPod}
+            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-secondary transition hover:bg-primary/90"
+          >
+            View POD
+          </button>
+
+          <a
+            href={`/shipments/${shipment.id}/print`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg border border-border px-4 text-sm font-bold text-primary transition hover:border-primary"
+          >
+            Print POD
+          </a>
+        </div>
+      ) : null}
     </section>
   );
 }

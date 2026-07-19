@@ -6,6 +6,8 @@ import com.parcelshipping.shipments.api.dto.ShipmentSearchRequest;
 import com.parcelshipping.shipments.domain.ProofOfDeliveryStatus;
 import com.parcelshipping.shipments.domain.Shipment;
 import com.parcelshipping.shipments.domain.ShipmentStatus;
+import com.parcelshipping.shipments.repository.ShipmentPodCountProjection;
+import com.parcelshipping.shipments.repository.ShipmentPodRepository;
 import com.parcelshipping.shipments.repository.ShipmentRepository;
 import com.parcelshipping.shipments.repository.ShipmentSpecifications;
 import org.springframework.data.domain.Page;
@@ -15,7 +17,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ShipmentService {
@@ -33,13 +38,16 @@ public class ShipmentService {
     );
 
     private final ShipmentRepository shipmentRepository;
+    private final ShipmentPodRepository shipmentPodRepository;
     private final ShipmentMapper shipmentMapper;
 
     public ShipmentService(
             ShipmentRepository shipmentRepository,
+            ShipmentPodRepository shipmentPodRepository,
             ShipmentMapper shipmentMapper
     ) {
         this.shipmentRepository = shipmentRepository;
+        this.shipmentPodRepository = shipmentPodRepository;
         this.shipmentMapper = shipmentMapper;
     }
 
@@ -49,9 +57,29 @@ public class ShipmentService {
 
         Page<Shipment> page = shipmentRepository.findAll(specification, pageRequest);
 
+        Map<UUID, Long> podCounts =
+                loadPodCounts(
+                        page.getContent()
+                );
+
         List<ShipmentResponse> items = page.getContent()
                 .stream()
-                .map(shipmentMapper::toResponse)
+                .map(shipment -> {
+                    long podCount =
+                            podCounts.getOrDefault(
+                                    shipment.getId(),
+                                    0L
+                            );
+
+                    return shipmentMapper
+                            .toResponse(
+                                    shipment,
+                                    podCount > 0
+                                            ? "available"
+                                            : "missing",
+                                    podCount
+                            );
+                })
                 .toList();
 
         return new ShipmentPageResponse(
@@ -73,8 +101,30 @@ public class ShipmentService {
                 .and(ShipmentSpecifications.trackingCodeContains(request.trackingCode()))
                 .and(ShipmentSpecifications.dispatchDateBetween(request.dispatchDateFrom(), request.dispatchDateTo()))
                 .and(ShipmentSpecifications.statusEquals(status))
-                .and(ShipmentSpecifications.proofOfDeliveryEquals(proofOfDelivery))
+                .and(ShipmentSpecifications.proofOfDeliveryCountEquals(proofOfDelivery))
                 .and(ShipmentSpecifications.statusDateBetween(request.statusDateFrom(), request.statusDateTo()));
+    }
+
+    private Map<UUID, Long> loadPodCounts(
+            List<Shipment> shipments
+    ) {
+        if (shipments.isEmpty()) {
+            return Map.of();
+        }
+
+        List<UUID> shipmentIds =
+                shipments
+                        .stream()
+                        .map(Shipment::getId)
+                        .toList();
+
+        return shipmentPodRepository
+                .countByShipmentIds(shipmentIds)
+                .stream()
+                .collect(Collectors.toMap(
+                        ShipmentPodCountProjection::getShipmentId,
+                        ShipmentPodCountProjection::getPodCount
+                ));
     }
 
     private PageRequest buildPageRequest(ShipmentSearchRequest request) {

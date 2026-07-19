@@ -15,7 +15,10 @@ const noBodyStatuses = new Set([
  */
 const forwardedHeaderNames = [
   "content-type",
+  "content-disposition",
   "pragma",
+  "cache-control",
+  "x-content-type-options",
   "www-authenticate",
   "location",
   "retry-after",
@@ -78,10 +81,7 @@ export async function createBackendProxyResponse(
    * Les réponses BFF contenant des données privées
    * ne doivent jamais être mises en cache.
    */
-  responseHeaders.set(
-    "cache-control",
-    "no-store",
-  );
+  responseHeaders.set("cache-control", "no-store");
 
   for (
     const headerName
