@@ -9,6 +9,7 @@ import com.parcelshipping.shipments.repository.ShipmentPodRepository;
 import com.parcelshipping.shipments.storage.ShipmentPodStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -207,6 +208,31 @@ public class ShipmentPodSeedService {
                     .saveAndFlush(
                             newPod
                     );
+        } catch (
+                DataIntegrityViolationException exception
+        ) {
+            if (
+                    isValidConcurrentCreation(
+                            shipment,
+                            position,
+                            storageKey
+                    )
+            ) {
+                LOGGER.info(
+                        "POD {} for shipment {} was created concurrently.",
+                        position,
+                        shipment.getTrackingCode()
+                );
+
+                return;
+            }
+
+            shipmentPodStorage
+                    .deleteIfExists(
+                            storageKey
+                    );
+
+            throw exception;
         } catch (RuntimeException exception) {
             /*
              * La ligne n'a pas été persistée :
@@ -226,6 +252,26 @@ public class ShipmentPodSeedService {
                 position,
                 shipment.getTrackingCode()
         );
+    }
+
+    private boolean isValidConcurrentCreation(
+            Shipment shipment,
+            int position,
+            String storageKey
+    ) {
+        return shipmentPodRepository
+                .findByShipmentIdAndPosition(
+                        shipment.getId(),
+                        position
+                )
+                .filter(pod -> storageKey.equals(
+                        pod.getStorageKey()
+                ))
+                .filter(pod -> shipmentPodStorage
+                        .exists(
+                                pod.getStorageKey()
+                        ))
+                .isPresent();
     }
 
     private byte[] generatePod(
