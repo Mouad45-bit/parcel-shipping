@@ -101,6 +101,8 @@ function SelectedClientExports({
   const [viewerExport, setViewerExport] = useState<ViewerExportState | null>(
     null,
   );
+  const [archiveSwitchIndicatorIndex, setArchiveSwitchIndicatorIndex] =
+    useState(archived ? 1 : 0);
 
   const query = useMemo(
     () => ({
@@ -352,35 +354,73 @@ function SelectedClientExports({
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
         <div
-          className="flex min-w-max items-center gap-1.5 rounded-full border border-secondary bg-secondary/30 p-1 shadow-sm"
+          className="relative flex min-w-max items-center rounded-2xl border border-secondary bg-secondary/30 p-1.5 shadow-sm"
           aria-label="Switch exports view"
         >
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-1.5 rounded-xl bg-primary shadow-md transition-transform duration-200 ease-out"
+            style={{
+              left: "calc(0.375rem + 4px)",
+              transform: `translateX(calc(${archiveSwitchIndicatorIndex} * 4rem))`,
+              width: "calc(4rem - 8px)",
+            }}
+          />
+
           <Link
             href={`/exports?client=${encodeURIComponent(selectedClient.value)}&archived=false`}
             aria-current={!archived ? "page" : undefined}
             aria-label="Active exports"
+            onClick={() => {
+              setArchiveSwitchIndicatorIndex(0);
+            }}
             className={[
-              "inline-flex h-9 w-16 items-center justify-center rounded-full text-sm font-bold transition",
-              !archived
-                ? "bg-primary text-secondary shadow-md"
-                : "text-primary hover:bg-secondary/50",
+              "group relative z-10 inline-flex h-9 w-16 items-center justify-center rounded-xl text-sm font-bold transition-all duration-200 ease-out",
+              archiveSwitchIndicatorIndex === 0
+                ? "text-secondary"
+                : "text-primary hover:-translate-y-[0.5px]",
             ].join(" ")}
           >
-            <PackageCheck size={19} aria-hidden="true" />
+            {archiveSwitchIndicatorIndex !== 0 ? (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 left-1 right-1 rounded-xl bg-[#e8b98f] opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100"
+              />
+            ) : null}
+
+            <PackageCheck
+              size={19}
+              aria-hidden="true"
+              className="relative z-10"
+            />
           </Link>
 
           <Link
             href={`/exports?client=${encodeURIComponent(selectedClient.value)}&archived=true`}
             aria-current={archived ? "page" : undefined}
             aria-label="Archived exports"
+            onClick={() => {
+              setArchiveSwitchIndicatorIndex(1);
+            }}
             className={[
-              "inline-flex h-9 w-16 items-center justify-center rounded-full text-sm font-bold transition",
-              archived
-                ? "bg-primary text-secondary shadow-md"
-                : "text-primary hover:bg-secondary/50",
+              "group relative z-10 inline-flex h-9 w-16 items-center justify-center rounded-xl text-sm font-bold transition-all duration-200 ease-out",
+              archiveSwitchIndicatorIndex === 1
+                ? "text-secondary"
+                : "text-primary hover:-translate-y-[0.5px]",
             ].join(" ")}
           >
-            <Archive size={19} aria-hidden="true" />
+            {archiveSwitchIndicatorIndex !== 1 ? (
+              <span
+                aria-hidden="true"
+                className="absolute inset-y-0 left-1 right-1 rounded-xl bg-[#e8b98f] opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100"
+              />
+            ) : null}
+
+            <Archive
+              size={19}
+              aria-hidden="true"
+              className="relative z-10"
+            />
           </Link>
         </div>
 
