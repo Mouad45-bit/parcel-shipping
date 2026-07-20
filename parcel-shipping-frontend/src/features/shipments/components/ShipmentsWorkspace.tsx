@@ -20,6 +20,7 @@ import { SelectedClientHeader } from "@/features/clients/components/SelectedClie
 import { PodViewerModal } from "./PodViewerModal";
 import type { Shipment } from "@/features/shipments/types/shipment";
 import { useRouter } from "next/navigation";
+import { downloadBrowserGeneratedPodPdf } from "@/features/shipments/utils/pod-browser-pdf";
 
 type ShipmentsWorkspaceProps = {
   selectedClientValue: string | null;
@@ -78,6 +79,9 @@ function SelectedClientShipments({
     useState<ViewerShipmentState | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [isExportingSelected, setIsExportingSelected] = useState(false);
+  const [printingShipmentId, setPrintingShipmentId] = useState<string | null>(
+    null,
+  );
 
   const shipmentQuery = useMemo(
     () => ({
@@ -170,6 +174,32 @@ function SelectedClientShipments({
     });
   }
 
+  async function handlePrintPod(shipment: Shipment) {
+    if (printingShipmentId !== null) {
+      return;
+    }
+
+    setMutationError(null);
+    setPrintingShipmentId(shipment.id);
+
+    try {
+      await downloadBrowserGeneratedPodPdf(shipment.id);
+    } catch (printError) {
+      if (printError instanceof ShipmentsApiError && printError.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      setMutationError(
+        printError instanceof Error
+          ? printError.message
+          : "Unable to generate the POD PDF in the browser.",
+      );
+    } finally {
+      setPrintingShipmentId(null);
+    }
+  }
+
   return (
     <PageCard className="p-5 sm:p-6 lg:p-7">
       <SelectedClientHeader
@@ -213,6 +243,8 @@ function SelectedClientShipments({
           onPageSizeChange={handlePageSizeChange}
           onSortChange={handleSortChange}
           onViewPod={handleViewPod}
+          onPrintPod={handlePrintPod}
+          printingShipmentId={printingShipmentId}
         />
       )}
 

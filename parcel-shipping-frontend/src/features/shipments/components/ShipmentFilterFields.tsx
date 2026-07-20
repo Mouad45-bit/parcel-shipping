@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   CalendarDays,
   ChevronDown,
@@ -11,6 +12,8 @@ type ShipmentFilterFieldsProps = {
   idPrefix: string;
   filters: ShipmentFilters;
   onChange: (filters: ShipmentFilters) => void;
+  children?: ReactNode;
+  className?: string;
 };
 
 type DateRangeFieldsProps = {
@@ -37,7 +40,7 @@ type SelectFieldProps = {
 const inputClassName =
   "h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink outline-none transition placeholder:text-ink/40 focus:border-primary focus:ring-2 focus:ring-primary/15";
 
-function DateRangeFields({
+export function DateRangeFields({
   title,
   fromId,
   toId,
@@ -143,6 +146,8 @@ export function ShipmentFilterFields({
   idPrefix,
   filters,
   onChange,
+  children,
+  className = "mt-3 grid items-start gap-8 xl:grid-cols-[minmax(220px,1fr)_minmax(260px,1fr)_minmax(220px,0.9fr)_minmax(260px,1fr)]",
 }: ShipmentFilterFieldsProps) {
   function updateFilter<
     Key extends keyof ShipmentFilters,
@@ -157,7 +162,7 @@ export function ShipmentFilterFields({
   }
 
   return (
-    <div className="mt-3 grid items-start gap-8 xl:grid-cols-[minmax(220px,1fr)_minmax(260px,1fr)_minmax(220px,0.9fr)_minmax(260px,1fr)]">
+    <div className={className}>
       <div className="grid min-w-0 grid-rows-[20px_44px_44px] gap-y-3">
         <label
           htmlFor={`${idPrefix}-tracking-code`}
@@ -288,6 +293,8 @@ export function ShipmentFilterFields({
           updateFilter("statusDateTo", value)
         }
       />
+
+      {children}
     </div>
   );
 }

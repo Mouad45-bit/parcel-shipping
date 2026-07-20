@@ -11,22 +11,6 @@
   --color-border: #eadfd8;
 }
 
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .print-page-break {
-    break-after: page;
-    page-break-after: always;
-  }
-}
-
 :root {
   --background: var(--color-page);
   --foreground: var(--color-ink);

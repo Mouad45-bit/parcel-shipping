@@ -20,6 +20,8 @@ import {
 } from "@/features/tracking/utils/shipment-tracking-utils";
 import { PodViewerModal } from "@/features/shipments/components/PodViewerModal";
 import type { ShipmentTracking } from "@/features/tracking/types/shipment-tracking";
+import { downloadBrowserGeneratedPodPdf } from "@/features/shipments/utils/pod-browser-pdf";
+import { ShipmentsApiError } from "@/features/shipments/api/shipments-api";
 
 type ShipmentTrackingWorkspaceProps = {
   initialTrackingCode: string | null;
@@ -47,6 +49,10 @@ export function ShipmentTrackingWorkspace({
   );
   const [viewerShipment, setViewerShipment] =
     useState<ShipmentTracking | null>(null);
+  const [printingShipmentId, setPrintingShipmentId] = useState<string | null>(
+    null,
+  );
+  const [printError, setPrintError] = useState<string | null>(null);
 
   const { data, requestedCode, isLoading, error, track, reset } =
     useShipmentTracking();
@@ -111,6 +117,35 @@ export function ShipmentTrackingWorkspace({
     setInputError(null);
 
     router.replace("/shipments/track");
+  }
+
+  async function handlePrintPod(shipment: ShipmentTracking) {
+    if (printingShipmentId !== null) {
+      return;
+    }
+
+    setPrintError(null);
+    setPrintingShipmentId(shipment.id);
+
+    try {
+      await downloadBrowserGeneratedPodPdf(shipment.id);
+    } catch (downloadError) {
+      if (
+        downloadError instanceof ShipmentsApiError &&
+        downloadError.status === 401
+      ) {
+        router.replace("/login");
+        return;
+      }
+
+      setPrintError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : "Unable to generate the POD PDF in the browser.",
+      );
+    } finally {
+      setPrintingShipmentId(null);
+    }
   }
 
   return (
@@ -242,9 +277,20 @@ export function ShipmentTrackingWorkspace({
 
         {data ? (
           <>
+            {printError ? (
+              <div
+                role="alert"
+                className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm font-semibold text-red-800"
+              >
+                {printError}
+              </div>
+            ) : null}
+
             <ShipmentTrackingResult
               shipment={data}
               onViewPod={() => setViewerShipment(data)}
+              onPrintPod={() => void handlePrintPod(data)}
+              isPrintingPod={printingShipmentId === data.id}
             />
 
             <div className="mt-5 flex justify-end">

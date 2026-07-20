@@ -13,6 +13,7 @@ export type ShipmentTracking = {
   statusDate: string;
   proofOfDelivery: ProofOfDeliveryStatus;
   podCount: number;
+  exportedAt: string | null;
 };
 
 export type ShipmentTrackingErrorKind =

@@ -2,11 +2,12 @@ import {
   Building2,
   CalendarDays,
   Clock3,
+  Eye,
   FileImage,
   MapPin,
   PackageCheck,
+  Printer,
 } from "lucide-react";
-import { ProofOfDeliveryState } from "@/features/shipments/components/ProofOfDeliveryState";
 import { ShipmentStatusBadge } from "@/features/shipments/components/ShipmentStatusBadge";
 import { formatShipmentDateTime } from "@/features/shipments/utils/shipment-utils";
 import type { ShipmentTracking } from "@/features/tracking/types/shipment-tracking";
@@ -14,6 +15,8 @@ import type { ShipmentTracking } from "@/features/tracking/types/shipment-tracki
 type ShipmentTrackingResultProps = {
   shipment: ShipmentTracking;
   onViewPod: () => void;
+  onPrintPod: () => void;
+  isPrintingPod: boolean;
 };
 
 type InformationRowProps = {
@@ -40,9 +43,19 @@ function InformationRow({ icon: Icon, label, children }: InformationRowProps) {
   );
 }
 
+function capitalizeFirstLetter(value: string) {
+  if (value.length === 0) {
+    return value;
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
 export function ShipmentTrackingResult({
   shipment,
   onViewPod,
+  onPrintPod,
+  isPrintingPod,
 }: ShipmentTrackingResultProps) {
   return (
     <section
@@ -70,8 +83,8 @@ export function ShipmentTrackingResult({
       </header>
 
       <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
-        <InformationRow icon={Building2} label="Client code">
-          {shipment.client}
+        <InformationRow icon={Building2} label="Client">
+          {capitalizeFirstLetter(shipment.client)}
         </InformationRow>
 
         <InformationRow icon={MapPin} label="Destination">
@@ -86,38 +99,55 @@ export function ShipmentTrackingResult({
           {formatShipmentDateTime(shipment.statusDate)}
         </InformationRow>
 
-        <InformationRow icon={FileImage} label="Proof of delivery">
-          <ProofOfDeliveryState
-            value={shipment.podCount > 0 ? "available" : "missing"}
-          />
-        </InformationRow>
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-page/45 px-4 py-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-secondary/55 text-primary">
+            <FileImage size={19} aria-hidden="true" />
+          </span>
 
-        <InformationRow icon={FileImage} label="POD documents">
-          {shipment.podCount}{" "}
-          {shipment.podCount === 1 ? "document" : "documents"}
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink/40">
+              Proof of delivery
+            </p>
+
+            <p className="mt-0.5 text-sm font-semibold text-ink">
+              {shipment.podCount > 0
+                ? `${shipment.podCount} ${
+                    shipment.podCount === 1 ? "document" : "documents"
+                  }`
+                : "--"}
+            </p>
+          </div>
+
+          {shipment.podCount > 0 ? (
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                onClick={onViewPod}
+                aria-label={`View POD for shipment ${shipment.trackingCode}`}
+                className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <Eye size={17} />
+              </button>
+
+              <button
+                type="button"
+                onClick={onPrintPod}
+                disabled={isPrintingPod}
+                aria-label={`Print POD for shipment ${shipment.trackingCode}`}
+                className="inline-flex size-8 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:pointer-events-none disabled:opacity-50"
+              >
+                <Printer size={17} />
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <InformationRow icon={CalendarDays} label="Export date">
+          {shipment.exportedAt
+            ? formatShipmentDateTime(shipment.exportedAt)
+            : "--"}
         </InformationRow>
       </div>
-
-      {shipment.podCount > 0 ? (
-        <div className="flex flex-wrap justify-end gap-3 border-t border-border px-5 py-4">
-          <button
-            type="button"
-            onClick={onViewPod}
-            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-secondary transition hover:bg-primary/90"
-          >
-            View POD
-          </button>
-
-          <a
-            href={`/shipments/${shipment.id}/print`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg border border-border px-4 text-sm font-bold text-primary transition hover:border-primary"
-          >
-            Print POD
-          </a>
-        </div>
-      ) : null}
     </section>
   );
 }

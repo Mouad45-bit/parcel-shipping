@@ -1,8 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  Archive,
+  Download,
+  PackageCheck,
+  RotateCcw,
+  Undo2,
+} from "lucide-react";
 import { PageCard } from "@/components/ui/PageCard";
 import { ClientSelectionGate } from "@/features/clients/components/ClientSelectionGate";
 import { SelectedClientHeader } from "@/features/clients/components/SelectedClientHeader";
@@ -15,8 +27,13 @@ import {
 } from "@/features/exports/api/exports-api";
 import { useExports } from "@/features/exports/hooks/useExports";
 import type { ShipmentExport } from "@/features/exports/types/export";
-import { ShipmentFilterFields } from "@/features/shipments/components/ShipmentFilterFields";
+import {
+  DateRangeFields,
+  ShipmentFilterFields,
+} from "@/features/shipments/components/ShipmentFilterFields";
+import { ShipmentPodThumbnails } from "@/features/shipments/components/ShipmentPodThumbnails";
 import { ShipmentStatusBadge } from "@/features/shipments/components/ShipmentStatusBadge";
+import { PodViewerModal } from "@/features/shipments/components/PodViewerModal";
 import {
   initialShipmentFilters,
   type ShipmentFilters,
@@ -33,6 +50,11 @@ type SelectedClientExportsProps = {
   selectedClient: Client;
   archived: boolean;
   onChangeClient: () => void;
+};
+
+type ViewerExportState = {
+  exportItem: ShipmentExport;
+  initialPosition: number | null;
 };
 
 const pageSizeOptions = [5, 10, 20];
@@ -61,6 +83,7 @@ function SelectedClientExports({
   onChangeClient,
 }: SelectedClientExportsProps) {
   const router = useRouter();
+  const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
   const [filters, setFilters] = useState<ShipmentFilters>(initialShipmentFilters);
   const [exportDateFrom, setExportDateFrom] = useState("");
   const [exportDateTo, setExportDateTo] = useState("");
@@ -70,6 +93,14 @@ function SelectedClientExports({
   const [refreshKey, setRefreshKey] = useState(0);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [mutatingExportId, setMutatingExportId] = useState<string | null>(null);
+  const [selectedExportIds, setSelectedExportIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [isUpdatingSelectedExports, setIsUpdatingSelectedExports] =
+    useState(false);
+  const [viewerExport, setViewerExport] = useState<ViewerExportState | null>(
+    null,
+  );
 
   const query = useMemo(
     () => ({
@@ -97,12 +128,121 @@ function SelectedClientExports({
   );
 
   const { data, isLoading, error } = useExports(query);
+  const oppositeSummaryQuery = useMemo(
+    () => ({
+      client: selectedClient.value,
+      archived: !archived,
+      exportDateFrom,
+      exportDateTo,
+      page: 0,
+      size: 1,
+      sortState: null,
+      refreshKey,
+      ...filters,
+    }),
+    [
+      archived,
+      exportDateFrom,
+      exportDateTo,
+      filters,
+      refreshKey,
+      selectedClient.value,
+    ],
+  );
+  const { data: oppositeSummaryData } = useExports(oppositeSummaryQuery);
+
+  const visibleExportIds = useMemo(
+    () =>
+      (data?.items ?? []).map((item) => item.id),
+    [data?.items],
+  );
+
+  const areAllVisibleExportsSelected =
+    visibleExportIds.length > 0 &&
+    visibleExportIds.every((exportId) =>
+      selectedExportIds.has(exportId),
+    );
+
+  const areSomeVisibleExportsSelected =
+    visibleExportIds.some((exportId) =>
+      selectedExportIds.has(exportId),
+    ) && !areAllVisibleExportsSelected;
+
+  const hasActiveFilters =
+    (
+      Object.keys(
+        initialShipmentFilters,
+      ) as Array<keyof ShipmentFilters>
+    ).some(
+      (key) =>
+        filters[key] !==
+        initialShipmentFilters[key],
+    ) ||
+    exportDateFrom !== "" ||
+    exportDateTo !== "";
+
+  useEffect(() => {
+    const visibleExportIdSet = new Set(visibleExportIds);
+
+    queueMicrotask(() => {
+      setSelectedExportIds((currentIds) => {
+        const nextIds = new Set<string>();
+
+        for (const exportId of currentIds) {
+          if (visibleExportIdSet.has(exportId)) {
+            nextIds.add(exportId);
+          }
+        }
+
+        return nextIds.size === currentIds.size ? currentIds : nextIds;
+      });
+    });
+  }, [visibleExportIds]);
+
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      selectAllCheckboxRef.current.indeterminate =
+        areSomeVisibleExportsSelected;
+    }
+  }, [areSomeVisibleExportsSelected]);
 
   function resetFilters() {
     setFilters(initialShipmentFilters);
     setExportDateFrom("");
     setExportDateTo("");
     setPage(0);
+  }
+
+  function toggleExportSelection(exportId: string) {
+    setSelectedExportIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+
+      if (nextIds.has(exportId)) {
+        nextIds.delete(exportId);
+      } else {
+        nextIds.add(exportId);
+      }
+
+      return nextIds;
+    });
+  }
+
+  function toggleVisibleExportsSelection() {
+    setSelectedExportIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      const shouldDeselectVisibleExports =
+        areAllVisibleExportsSelected || areSomeVisibleExportsSelected;
+
+      visibleExportIds.forEach((exportId) => {
+        if (shouldDeselectVisibleExports) {
+          nextIds.delete(exportId);
+        } else {
+          nextIds.add(exportId);
+        }
+      });
+
+      return nextIds;
+    });
   }
 
   async function runMutation(
@@ -141,32 +281,143 @@ function SelectedClientExports({
     }
   }
 
+  async function updateSelectedExportsArchiveState() {
+    if (
+      selectedExportIds.size === 0 ||
+      isUpdatingSelectedExports
+    ) {
+      return;
+    }
+
+    setMutationError(null);
+    setIsUpdatingSelectedExports(true);
+
+    try {
+      for (const exportId of selectedExportIds) {
+        if (archived) {
+          await unarchiveExport(exportId);
+        } else {
+          await archiveExport(exportId);
+        }
+      }
+
+      setSelectedExportIds(new Set());
+      setRefreshKey((key) => key + 1);
+    } catch (mutationFailure) {
+      if (
+        mutationFailure instanceof ShipmentsApiError &&
+        mutationFailure.status === 401
+      ) {
+        router.replace("/login");
+        return;
+      }
+
+      setMutationError(
+        mutationFailure instanceof Error
+          ? mutationFailure.message
+          : `Unable to ${archived ? "unarchive" : "archive"} the selected exports.`,
+      );
+    } finally {
+      setIsUpdatingSelectedExports(false);
+    }
+  }
+
+  function handleViewExportPod(
+    exportItem: ShipmentExport,
+    initialPosition?: number,
+  ) {
+    setViewerExport({
+      exportItem,
+      initialPosition: initialPosition ?? null,
+    });
+  }
+
   const safeTotalPages = Math.max(1, data?.totalPages ?? 1);
+  const totalExports = data?.totalItems ?? 0;
+  const activeExportCount = archived
+    ? oppositeSummaryData?.totalItems
+    : totalExports;
+  const archivedExportCount = archived
+    ? totalExports
+    : oppositeSummaryData?.totalItems;
 
   return (
     <PageCard className="p-5 sm:p-6 lg:p-7">
       <SelectedClientHeader
         title="Exports"
-        description="Download active POD exports or manage archived exports."
+        description="Download POD exports and manage their archive state."
         selectedClient={selectedClient}
         onChangeClient={onChangeClient}
       />
 
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href={`/exports?client=${encodeURIComponent(selectedClient.value)}&archived=${(!archived).toString()}`}
-          className="rounded-lg border border-border px-4 py-2 text-sm font-bold text-primary"
+        <div
+          className="flex min-w-max items-center gap-1.5 rounded-full border border-secondary bg-secondary/30 p-1 shadow-sm"
+          aria-label="Switch exports view"
         >
-          {archived ? "See active exports" : "See archive"}
-        </Link>
+          <Link
+            href={`/exports?client=${encodeURIComponent(selectedClient.value)}&archived=false`}
+            aria-current={!archived ? "page" : undefined}
+            aria-label="Active exports"
+            className={[
+              "inline-flex h-9 w-16 items-center justify-center rounded-full text-sm font-bold transition",
+              !archived
+                ? "bg-primary text-secondary shadow-md"
+                : "text-primary hover:bg-secondary/50",
+            ].join(" ")}
+          >
+            <PackageCheck size={19} aria-hidden="true" />
+          </Link>
 
-        <button
-          type="button"
-          onClick={resetFilters}
-          className="cursor-pointer text-sm font-bold text-primary"
-        >
-          Reset filters
-        </button>
+          <Link
+            href={`/exports?client=${encodeURIComponent(selectedClient.value)}&archived=true`}
+            aria-current={archived ? "page" : undefined}
+            aria-label="Archived exports"
+            className={[
+              "inline-flex h-9 w-16 items-center justify-center rounded-full text-sm font-bold transition",
+              archived
+                ? "bg-primary text-secondary shadow-md"
+                : "text-primary hover:bg-secondary/50",
+            ].join(" ")}
+          >
+            <Archive size={19} aria-hidden="true" />
+          </Link>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={updateSelectedExportsArchiveState}
+            disabled={
+              selectedExportIds.size === 0 ||
+              isUpdatingSelectedExports
+            }
+            className="inline-flex h-11 w-fit cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary bg-secondary px-4 text-sm font-semibold text-primary transition hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          >
+            {archived ? (
+              <Undo2 size={17} />
+            ) : (
+              <Archive size={17} />
+            )}
+            {isUpdatingSelectedExports
+              ? archived
+                ? "Restoring..."
+                : "Archiving..."
+              : archived
+                ? "Restore"
+                : "Archive"}
+          </button>
+
+          <button
+            type="button"
+            onClick={resetFilters}
+            disabled={!hasActiveFilters}
+            className="inline-flex h-11 w-fit cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-4 text-sm font-semibold text-secondary transition hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+          >
+            <RotateCcw size={17} />
+            Reset filters
+          </button>
+        </div>
       </div>
 
       <ShipmentFilterFields
@@ -176,35 +427,24 @@ function SelectedClientExports({
           setFilters(nextFilters);
           setPage(0);
         }}
-      />
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="text-sm font-semibold text-ink/70">
-          Export date from
-          <input
-            type="date"
-            value={exportDateFrom}
-            onChange={(event) => {
-              setExportDateFrom(event.target.value);
-              setPage(0);
-            }}
-            className="mt-2 h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-          />
-        </label>
-
-        <label className="text-sm font-semibold text-ink/70">
-          Export date to
-          <input
-            type="date"
-            value={exportDateTo}
-            onChange={(event) => {
-              setExportDateTo(event.target.value);
-              setPage(0);
-            }}
-            className="mt-2 h-11 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
-          />
-        </label>
-      </div>
+        className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(170px,0.9fr)_minmax(220px,1fr)_minmax(190px,0.85fr)_minmax(220px,1fr)_minmax(220px,1fr)]"
+      >
+        <DateRangeFields
+          title="Export date"
+          fromId="exports-export-date-from"
+          toId="exports-export-date-to"
+          fromValue={exportDateFrom}
+          toValue={exportDateTo}
+          onFromChange={(value) => {
+            setExportDateFrom(value);
+            setPage(0);
+          }}
+          onToChange={(value) => {
+            setExportDateTo(value);
+            setPage(0);
+          }}
+        />
+      </ShipmentFilterFields>
 
       {error || mutationError ? (
         <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -212,18 +452,53 @@ function SelectedClientExports({
         </div>
       ) : null}
 
+      <div className="mt-8 flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-lg font-bold text-ink">
+            {totalExports} {totalExports === 1 ? "Export" : "Exports"}
+          </p>
+
+          <p className="mt-1 text-sm font-medium text-ink/55">
+            Selected: {selectedExportIds.size}
+          </p>
+        </div>
+
+        <p className="text-sm font-semibold text-ink/70 sm:self-end">
+          Active: {activeExportCount ?? "--"} / Archived:{" "}
+          {archivedExportCount ?? "--"}
+        </p>
+      </div>
+
       <div className="mt-6 overflow-x-auto">
         <table className="min-w-[1180px] w-full border-collapse text-left">
           <thead className="border-b border-border bg-secondary/20 text-sm">
             <tr>
+              <th className="w-12 px-4 py-4 text-center">
+                <input
+                  ref={selectAllCheckboxRef}
+                  type="checkbox"
+                  checked={areAllVisibleExportsSelected}
+                  onChange={toggleVisibleExportsSelection}
+                  aria-label="Select all visible exports"
+                  className="size-4 cursor-pointer rounded border-border [accent-color:var(--color-primary)]"
+                />
+              </th>
+
               {[
-                ["trackingCode", "Shipment code"],
-                ["dispatchDate", "Dispatch date"],
-                ["status", "Status"],
-                ["statusDate", "Status date"],
-                ["generatedAt", "Export date"],
-              ].map(([key, label]) => (
-                <th key={key} className="px-4 py-4">
+                ["trackingCode", "Shipment code", false],
+                ["dispatchDate", "Dispatch date", false],
+                ["status", "Status", true],
+                ["statusDate", "Status date", false],
+                ["generatedAt", "Export date", false],
+              ].map(([key, label, isCentered]) => (
+                <th
+                  key={key.toString()}
+                  className={
+                    isCentered
+                      ? "px-4 py-4 text-center"
+                      : "px-4 py-4"
+                  }
+                >
                   <button
                     type="button"
                     onClick={() => {
@@ -242,7 +517,7 @@ function SelectedClientExports({
                   </button>
                 </th>
               ))}
-              <th className="px-4 py-4">POD</th>
+              <th className="px-4 py-4 text-center">POD</th>
               <th className="px-4 py-4 text-center">Actions</th>
             </tr>
           </thead>
@@ -250,38 +525,67 @@ function SelectedClientExports({
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-ink/60">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-ink/60">
                   Loading exports...
                 </td>
               </tr>
             ) : (data?.items ?? []).length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-ink/60">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-ink/60">
                   No exports match the selected filters.
                 </td>
               </tr>
             ) : (
               data?.items.map((item) => (
-                <tr key={item.id} className="border-b border-border/70">
+                <tr
+                  key={item.id}
+                  className="border-b border-border/70 transition hover:bg-secondary/15"
+                >
+                  <td className="px-4 py-4 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedExportIds.has(item.id)}
+                      onChange={() => toggleExportSelection(item.id)}
+                      aria-label={`Select export for shipment ${item.trackingCode}`}
+                      className="size-4 cursor-pointer rounded border-border [accent-color:var(--color-primary)]"
+                    />
+                  </td>
                   <td className="px-4 py-4 text-sm font-bold text-primary">
                     {item.trackingCode}
                   </td>
                   <td className="px-4 py-4 text-sm">{formatShipmentDateTime(item.dispatchDate)}</td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 text-center">
                     <ShipmentStatusBadge status={item.status} />
                   </td>
                   <td className="px-4 py-4 text-sm">{formatShipmentDateTime(item.statusDate)}</td>
                   <td className="px-4 py-4 text-sm">{formatShipmentDateTime(item.generatedAt)}</td>
-                  <td className="px-4 py-4 text-sm">{item.podCount} document{item.podCount === 1 ? "" : "s"}</td>
+                  <td className="px-4 py-4 text-center">
+                    {item.podCount > 0 ? (
+                      <ShipmentPodThumbnails
+                        key={`${item.shipmentId}-${item.podCount}`}
+                        shipmentId={item.shipmentId}
+                        trackingCode={item.trackingCode}
+                        podCount={item.podCount}
+                        onViewPod={(initialPosition) =>
+                          handleViewExportPod(item, initialPosition)
+                        }
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold text-ink/35">
+                        --
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-4">
                     <div className="flex justify-center gap-2">
                       <button
                         type="button"
                         disabled={mutatingExportId === item.id}
                         onClick={() => void runMutation(item, "download")}
-                        className="cursor-pointer rounded-lg border border-border px-3 py-2 text-sm font-bold text-primary disabled:opacity-50"
+                        aria-label={`Download export for shipment ${item.trackingCode}`}
+                        className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50 disabled:opacity-50"
                       >
-                        Download
+                        <Download size={18} aria-hidden="true" />
                       </button>
                       <button
                         type="button"
@@ -289,9 +593,14 @@ function SelectedClientExports({
                         onClick={() =>
                           void runMutation(item, archived ? "unarchive" : "archive")
                         }
-                        className="cursor-pointer rounded-lg bg-primary px-3 py-2 text-sm font-bold text-secondary disabled:opacity-50"
+                        aria-label={`${archived ? "Restore" : "Archive"} export for shipment ${item.trackingCode}`}
+                        className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50 disabled:opacity-50"
                       >
-                        {archived ? "Unarchive" : "Archive"}
+                        {archived ? (
+                          <Undo2 size={18} aria-hidden="true" />
+                        ) : (
+                          <Archive size={18} aria-hidden="true" />
+                        )}
                       </button>
                     </div>
                   </td>
@@ -341,6 +650,14 @@ function SelectedClientExports({
           </button>
         </div>
       </div>
+
+      <PodViewerModal
+        isOpen={viewerExport !== null}
+        shipmentId={viewerExport?.exportItem.shipmentId ?? null}
+        trackingCode={viewerExport?.exportItem.trackingCode ?? null}
+        initialPosition={viewerExport?.initialPosition ?? null}
+        onClose={() => setViewerExport(null)}
+      />
     </PageCard>
   );
 }

@@ -48,6 +48,7 @@ public class ShipmentMapper {
                 podCount > 0
                         ? "available"
                         : "missing",
-                podCount);
+                podCount,
+                shipment.getExportedAt());
     }
 }

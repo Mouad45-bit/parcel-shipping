@@ -12,6 +12,7 @@ public record ShipmentTrackingResponse(
         String status,
         LocalDateTime statusDate,
         String proofOfDelivery,
-        long podCount
+        long podCount,
+        LocalDateTime exportedAt
 ) {
 }

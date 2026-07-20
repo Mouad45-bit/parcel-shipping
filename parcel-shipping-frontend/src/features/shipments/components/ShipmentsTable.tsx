@@ -6,9 +6,7 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
 } from "react";
-import Image from "next/image";
 import {
   ArrowDown,
   ArrowUp,
@@ -19,12 +17,9 @@ import type {
   ShipmentSortKey,
   ShipmentSortState,
 } from "@/features/shipments/api/shipments-api";
-import { fetchShipmentPods } from "@/features/shipments/api/shipments-api";
-import type {
-  Shipment,
-  ShipmentPod,
-} from "@/features/shipments/types/shipment";
+import type { Shipment } from "@/features/shipments/types/shipment";
 import { formatShipmentDateTime } from "@/features/shipments/utils/shipment-utils";
+import { ShipmentPodThumbnails } from "./ShipmentPodThumbnails";
 import { ShipmentStatusBadge } from "./ShipmentStatusBadge";
 
 type ShipmentsTableProps = {
@@ -41,6 +36,8 @@ type ShipmentsTableProps = {
   onPageSizeChange: (pageSize: number) => void;
   onSortChange: (sortState: ShipmentSortState) => void;
   onViewPod: (shipment: Shipment, initialPosition?: number) => void;
+  onPrintPod: (shipment: Shipment) => void;
+  printingShipmentId: string | null;
 };
 
 type SortButtonProps = {
@@ -48,11 +45,6 @@ type SortButtonProps = {
   column: ShipmentSortKey;
   sortState: ShipmentSortState;
   onSort: (column: ShipmentSortKey) => void;
-};
-
-type ShipmentPodThumbnailsProps = {
-  shipment: Shipment;
-  onViewPod: (shipment: Shipment, initialPosition?: number) => void;
 };
 
 const pageSizeOptions = [5, 10, 20];
@@ -81,92 +73,6 @@ function SortButton({ label, column, sortState, onSort }: SortButtonProps) {
   );
 }
 
-function ShipmentPodThumbnails({
-  shipment,
-  onViewPod,
-}: ShipmentPodThumbnailsProps) {
-  const [pods, setPods] = useState<ShipmentPod[]>([]);
-  const [isLoading, setIsLoading] = useState(shipment.podCount > 0);
-  const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    const abortController = new AbortController();
-
-    fetchShipmentPods(shipment.id, abortController.signal)
-      .then((response) => {
-        setPods(response.items);
-      })
-      .catch((error: unknown) => {
-        if (abortController.signal.aborted) {
-          return;
-        }
-
-        console.error(
-          "Unable to load shipment POD thumbnails.",
-          error,
-        );
-
-        setPods([]);
-        setHasError(true);
-      })
-      .finally(() => {
-        if (!abortController.signal.aborted) {
-          setIsLoading(false);
-        }
-      });
-
-    return () => {
-      abortController.abort();
-    };
-  }, [shipment.id]);
-
-  if (isLoading) {
-    return (
-      <div
-        className="flex justify-center gap-1.5"
-        aria-label={`Loading ${shipment.podCount} POD preview${shipment.podCount > 1 ? "s" : ""}`}
-      >
-        {Array.from({ length: Math.min(shipment.podCount, 3) }).map(
-          (_, index) => (
-            <span
-              key={index}
-              className="h-12 w-9 animate-pulse rounded-md border border-border bg-secondary/50"
-            />
-          ),
-        )}
-      </div>
-    );
-  }
-
-  if (hasError || pods.length === 0) {
-    return <span className="text-sm font-semibold text-ink/35">--</span>;
-  }
-
-  return (
-    <div className="flex justify-center gap-1.5">
-      {pods.map((pod) => (
-        <button
-          key={pod.id}
-          type="button"
-          onClick={() => onViewPod(shipment, pod.position)}
-          aria-label={`View POD ${pod.position} for shipment ${shipment.trackingCode}`}
-          className="group inline-flex cursor-pointer rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-        >
-          <Image
-            src={pod.contentUrl}
-            alt={`POD ${pod.position} preview for shipment ${shipment.trackingCode}`}
-            width={36}
-            height={48}
-            unoptimized
-            loading="lazy"
-            className="h-12 w-9 rounded-md border border-border bg-surface object-cover shadow-sm transition group-hover:border-primary"
-          />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function ShipmentsTable({
   shipments,
   selectedShipmentIds,
@@ -181,6 +87,8 @@ export function ShipmentsTable({
   onPageSizeChange,
   onSortChange,
   onViewPod,
+  onPrintPod,
+  printingShipmentId,
 }: ShipmentsTableProps) {
   const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -438,8 +346,12 @@ export function ShipmentsTable({
                       {shipment.podCount > 0 ? (
                         <ShipmentPodThumbnails
                           key={`${shipment.id}-${shipment.podCount}`}
-                          shipment={shipment}
-                          onViewPod={onViewPod}
+                          shipmentId={shipment.id}
+                          trackingCode={shipment.trackingCode}
+                          podCount={shipment.podCount}
+                          onViewPod={(initialPosition) =>
+                            onViewPod(shipment, initialPosition)
+                          }
                         />
                       ) : (
                         <span className="text-sm font-semibold text-ink/35">
@@ -461,15 +373,15 @@ export function ShipmentsTable({
                     <td className="px-4 py-4">
                       {shipment.podCount > 0 ? (
                         <div className="flex justify-center gap-1.5">
-                          <a
-                            href={`/shipments/${shipment.id}/print`}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            disabled={printingShipmentId !== null}
+                            onClick={() => onPrintPod(shipment)}
                             aria-label={`Print shipment ${shipment.trackingCode}`}
-                            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50"
+                            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50 disabled:pointer-events-none disabled:opacity-50"
                           >
                             <Printer size={18} />
-                          </a>
+                          </button>
                         </div>
                       ) : null}
                     </td>
