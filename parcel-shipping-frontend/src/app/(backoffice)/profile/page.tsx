@@ -14,7 +14,7 @@ export default async function ProfilePage() {
     await requireCurrentUser();
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-page">
+    <div className="min-h-dvh bg-page">
       <BackOfficeHeader
         activeSection="profile"
         user={currentUser}
@@ -22,7 +22,7 @@ export default async function ProfilePage() {
 
       <main
         id="main-content"
-        className="flex min-h-0 flex-1 items-center overflow-hidden px-4 py-5 text-ink sm:px-6 lg:px-8"
+        className="px-4 py-8 text-ink sm:px-6 lg:px-8"
       >
         <section className="mx-auto w-full max-w-[1100px]">
           <ProfileWorkspace

@@ -29,7 +29,7 @@ export default async function ExportsPage({
     <>
       <BackOfficeHeader activeSection="exports" user={currentUser} />
 
-      <main className="min-h-screen bg-page px-4 py-8 text-ink sm:px-6 lg:px-8">
+      <main className="bg-page px-4 py-8 text-ink sm:px-6 lg:px-8">
         <section className="mx-auto max-w-[1440px]">
           <ExportsWorkspace
             selectedClientValue={selectedClientValue}
