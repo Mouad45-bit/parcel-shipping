@@ -3,52 +3,17 @@ import {
   Menu,
   PackageCheck,
 } from "lucide-react";
+import {
+  BackOfficeNavigation,
+  type BackOfficeSection,
+} from "@/components/layout/BackOfficeNavigation";
 import { userRoleLabels } from "@/features/auth/constants/user-role-labels";
 import type { AuthUser } from "@/features/auth/types/auth";
-
-type BackOfficeSection =
-  | "statistics"
-  | "shipments"
-  | "tracking"
-  | "exports"
-  | "profile";
-
-type NavigationSection = Exclude<
-  BackOfficeSection,
-  "profile"
->;
 
 type BackOfficeHeaderProps = {
   activeSection: BackOfficeSection;
   user: AuthUser;
 };
-
-const navigationItems: {
-  key: NavigationSection;
-  label: string;
-  href: string;
-}[] = [
-  {
-    key: "statistics",
-    label: "Statistics",
-    href: "/statistics",
-  },
-  {
-    key: "shipments",
-    label: "Shipments",
-    href: "/shipments",
-  },
-  {
-    key: "tracking",
-    label: "Track a Shipment",
-    href: "/shipments/track",
-  },
-  {
-    key: "exports",
-    label: "Exports",
-    href: "/exports",
-  },
-];
 
 export function BackOfficeHeader({
   activeSection,
@@ -101,9 +66,8 @@ export function BackOfficeHeader({
             </div>
           </div>
 
-          <Link
-            href="/shipments"
-            aria-label="Parcel Shipping home"
+          <div
+            aria-label="Parcel Shipping"
             className="flex items-center gap-2 text-primary"
           >
             <span className="flex size-10 items-center justify-center rounded-xl bg-secondary">
@@ -113,10 +77,10 @@ export function BackOfficeHeader({
               />
             </span>
 
-            <span className="hidden text-lg font-bold tracking-tight sm:block">
-              Parcel Shipping
+            <span className="hidden text-xl font-black uppercase tracking-wide sm:block">
+              PARCEL SHIPPING
             </span>
-          </Link>
+          </div>
 
           <div className="justify-self-end">
             <Link
@@ -141,37 +105,7 @@ export function BackOfficeHeader({
           </div>
         </div>
 
-        <nav
-          aria-label="Primary navigation"
-          className="overflow-x-auto border-t border-primary/20 py-2"
-        >
-          <div className="flex min-w-max items-center gap-1 rounded-lg border border-secondary bg-secondary/25 p-1">
-            {navigationItems.map((item) => {
-              const isActive =
-                item.key === activeSection;
-
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  aria-current={
-                    isActive
-                      ? "page"
-                      : undefined
-                  }
-                  className={[
-                    "rounded-md px-4 py-2 text-sm font-semibold transition-colors",
-                    isActive
-                      ? "bg-primary text-secondary shadow-sm"
-                      : "text-ink/65 hover:bg-surface hover:text-primary",
-                  ].join(" ")}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </nav>
+        <BackOfficeNavigation activeSection={activeSection} />
       </div>
     </header>
   );
