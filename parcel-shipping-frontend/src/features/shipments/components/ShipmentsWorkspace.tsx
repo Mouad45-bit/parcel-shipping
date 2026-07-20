@@ -6,7 +6,6 @@ import { ClientSelectionGate } from "@/features/clients/components/ClientSelecti
 import type { Client } from "@/features/clients/types/client";
 import {
   exportSelectedShipmentPods,
-  exportShipmentPod,
   ShipmentsApiError,
   type ShipmentSortState,
 } from "@/features/shipments/api/shipments-api";
@@ -29,6 +28,11 @@ type ShipmentsWorkspaceProps = {
 type SelectedClientShipmentsProps = {
   selectedClient: Client;
   onChangeClient: () => void;
+};
+
+type ViewerShipmentState = {
+  shipment: Shipment;
+  initialPosition: number | null;
 };
 
 export function ShipmentsWorkspace({
@@ -70,8 +74,10 @@ function SelectedClientShipments({
 
   const [sortState, setSortState] = useState<ShipmentSortState>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [viewerShipment, setViewerShipment] = useState<Shipment | null>(null);
+  const [viewerShipment, setViewerShipment] =
+    useState<ViewerShipmentState | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [isExportingSelected, setIsExportingSelected] = useState(false);
 
   const shipmentQuery = useMemo(
     () => ({
@@ -130,32 +136,13 @@ function SelectedClientShipments({
     setPage(0);
   }
 
-  async function handleExportShipment(shipment: Shipment) {
-    setMutationError(null);
-
-    try {
-      await exportShipmentPod(shipment.id);
-      setRefreshKey((key) => key + 1);
-    } catch (exportError) {
-      if (exportError instanceof ShipmentsApiError && exportError.status === 401) {
-        router.replace("/login");
-        return;
-      }
-
-      setMutationError(
-        exportError instanceof Error
-          ? exportError.message
-          : "Unable to export the POD PDF.",
-      );
-    }
-  }
-
   async function handleExportSelectedShipments() {
-    if (selectedShipmentIds.size === 0) {
+    if (selectedShipmentIds.size === 0 || isExportingSelected) {
       return;
     }
 
     setMutationError(null);
+    setIsExportingSelected(true);
 
     try {
       await exportSelectedShipmentPods(Array.from(selectedShipmentIds));
@@ -171,7 +158,16 @@ function SelectedClientShipments({
           ? exportError.message
           : "Unable to export the selected POD files.",
       );
+    } finally {
+      setIsExportingSelected(false);
     }
+  }
+
+  function handleViewPod(shipment: Shipment, initialPosition?: number) {
+    setViewerShipment({
+      shipment,
+      initialPosition: initialPosition ?? null,
+    });
   }
 
   return (
@@ -186,20 +182,11 @@ function SelectedClientShipments({
       <ShipmentsFilters
         filters={filters}
         selectedShipmentCount={selectedShipmentIds.size}
+        isExporting={isExportingSelected}
         onChange={handleFiltersChange}
         onReset={handleResetFilters}
+        onExport={handleExportSelectedShipments}
       />
-
-      <div className="mt-5 flex justify-end">
-        <button
-          type="button"
-          disabled={selectedShipmentIds.size === 0}
-          onClick={handleExportSelectedShipments}
-          className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-secondary transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-55"
-        >
-          Export selected POD
-        </button>
-      </div>
 
       {mutationError ? (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -225,15 +212,15 @@ function SelectedClientShipments({
           onPageChange={setPage}
           onPageSizeChange={handlePageSizeChange}
           onSortChange={handleSortChange}
-          onViewPod={setViewerShipment}
-          onExportPod={handleExportShipment}
+          onViewPod={handleViewPod}
         />
       )}
 
       <PodViewerModal
         isOpen={viewerShipment !== null}
-        shipmentId={viewerShipment?.id ?? null}
-        trackingCode={viewerShipment?.trackingCode ?? null}
+        shipmentId={viewerShipment?.shipment.id ?? null}
+        trackingCode={viewerShipment?.shipment.trackingCode ?? null}
+        initialPosition={viewerShipment?.initialPosition ?? null}
         onClose={() => setViewerShipment(null)}
       />
     </PageCard>

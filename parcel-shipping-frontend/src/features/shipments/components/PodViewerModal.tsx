@@ -19,6 +19,7 @@ type PodViewerModalProps = {
   isOpen: boolean;
   shipmentId: string | null;
   trackingCode: string | null;
+  initialPosition?: number | null;
   onClose: () => void;
 };
 
@@ -36,6 +37,7 @@ export function PodViewerModal({
   isOpen,
   shipmentId,
   trackingCode,
+  initialPosition = null,
   onClose,
 }: PodViewerModalProps) {
   const [pods, setPods] = useState<ShipmentPod[]>([]);
@@ -69,6 +71,14 @@ export function PodViewerModal({
       try {
         const response = await fetchShipmentPods(shipmentId, signal);
         setPods(response.items);
+        setCurrentIndex(
+          Math.max(
+            response.items.findIndex(
+              (pod) => pod.position === initialPosition,
+            ),
+            0,
+          ),
+        );
         setListState("idle");
       } catch (loadError) {
         if (signal.aborted) {
@@ -83,7 +93,7 @@ export function PodViewerModal({
         );
       }
     },
-    [shipmentId],
+    [initialPosition, shipmentId],
   );
 
   useEffect(() => {

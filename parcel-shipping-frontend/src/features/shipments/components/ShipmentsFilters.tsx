@@ -13,15 +13,19 @@ import {
 type ShipmentsFiltersProps = {
   filters: ShipmentFilters;
   selectedShipmentCount: number;
+  isExporting: boolean;
   onChange: (filters: ShipmentFilters) => void;
   onReset: () => void;
+  onExport: () => void;
 };
 
 export function ShipmentsFilters({
   filters,
   selectedShipmentCount,
+  isExporting,
   onChange,
   onReset,
+  onExport,
 }: ShipmentsFiltersProps) {
   const hasActiveFilters = (
     Object.keys(
@@ -46,11 +50,12 @@ export function ShipmentsFilters({
       <div className="flex justify-end gap-3">
         <button
           type="button"
-          disabled={!canExport}
+          onClick={onExport}
+          disabled={!canExport || isExporting}
           className="inline-flex h-11 w-fit cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-primary bg-secondary px-4 text-sm font-semibold text-primary transition hover:bg-secondary/80 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
         >
           <FileDown size={17} />
-          Export
+          {isExporting ? "Exporting..." : "Export"}
         </button>
 
         <button

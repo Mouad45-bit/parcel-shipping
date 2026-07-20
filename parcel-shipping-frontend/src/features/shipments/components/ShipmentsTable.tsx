@@ -6,23 +6,26 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
+import Image from "next/image";
 import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Download,
-  Eye,
   Printer,
 } from "lucide-react";
 import type {
   ShipmentSortKey,
   ShipmentSortState,
 } from "@/features/shipments/api/shipments-api";
-import type { Shipment } from "@/features/shipments/types/shipment";
+import { fetchShipmentPods } from "@/features/shipments/api/shipments-api";
+import type {
+  Shipment,
+  ShipmentPod,
+} from "@/features/shipments/types/shipment";
 import { formatShipmentDateTime } from "@/features/shipments/utils/shipment-utils";
 import { ShipmentStatusBadge } from "./ShipmentStatusBadge";
-import { ProofOfDeliveryState } from "./ProofOfDeliveryState";
 
 type ShipmentsTableProps = {
   shipments: Shipment[];
@@ -37,8 +40,7 @@ type ShipmentsTableProps = {
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
   onSortChange: (sortState: ShipmentSortState) => void;
-  onViewPod: (shipment: Shipment) => void;
-  onExportPod: (shipment: Shipment) => void;
+  onViewPod: (shipment: Shipment, initialPosition?: number) => void;
 };
 
 type SortButtonProps = {
@@ -46,6 +48,11 @@ type SortButtonProps = {
   column: ShipmentSortKey;
   sortState: ShipmentSortState;
   onSort: (column: ShipmentSortKey) => void;
+};
+
+type ShipmentPodThumbnailsProps = {
+  shipment: Shipment;
+  onViewPod: (shipment: Shipment, initialPosition?: number) => void;
 };
 
 const pageSizeOptions = [5, 10, 20];
@@ -74,6 +81,92 @@ function SortButton({ label, column, sortState, onSort }: SortButtonProps) {
   );
 }
 
+function ShipmentPodThumbnails({
+  shipment,
+  onViewPod,
+}: ShipmentPodThumbnailsProps) {
+  const [pods, setPods] = useState<ShipmentPod[]>([]);
+  const [isLoading, setIsLoading] = useState(shipment.podCount > 0);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    fetchShipmentPods(shipment.id, abortController.signal)
+      .then((response) => {
+        setPods(response.items);
+      })
+      .catch((error: unknown) => {
+        if (abortController.signal.aborted) {
+          return;
+        }
+
+        console.error(
+          "Unable to load shipment POD thumbnails.",
+          error,
+        );
+
+        setPods([]);
+        setHasError(true);
+      })
+      .finally(() => {
+        if (!abortController.signal.aborted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [shipment.id]);
+
+  if (isLoading) {
+    return (
+      <div
+        className="flex justify-center gap-1.5"
+        aria-label={`Loading ${shipment.podCount} POD preview${shipment.podCount > 1 ? "s" : ""}`}
+      >
+        {Array.from({ length: Math.min(shipment.podCount, 3) }).map(
+          (_, index) => (
+            <span
+              key={index}
+              className="h-12 w-9 animate-pulse rounded-md border border-border bg-secondary/50"
+            />
+          ),
+        )}
+      </div>
+    );
+  }
+
+  if (hasError || pods.length === 0) {
+    return <span className="text-sm font-semibold text-ink/35">--</span>;
+  }
+
+  return (
+    <div className="flex justify-center gap-1.5">
+      {pods.map((pod) => (
+        <button
+          key={pod.id}
+          type="button"
+          onClick={() => onViewPod(shipment, pod.position)}
+          aria-label={`View POD ${pod.position} for shipment ${shipment.trackingCode}`}
+          className="group inline-flex cursor-pointer rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+        >
+          <Image
+            src={pod.contentUrl}
+            alt={`POD ${pod.position} preview for shipment ${shipment.trackingCode}`}
+            width={36}
+            height={48}
+            unoptimized
+            loading="lazy"
+            className="h-12 w-9 rounded-md border border-border bg-surface object-cover shadow-sm transition group-hover:border-primary"
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function ShipmentsTable({
   shipments,
   selectedShipmentIds,
@@ -88,7 +181,6 @@ export function ShipmentsTable({
   onPageSizeChange,
   onSortChange,
   onViewPod,
-  onExportPod,
 }: ShipmentsTableProps) {
   const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -177,11 +269,15 @@ export function ShipmentsTable({
     });
   }
 
-  const exportedPodCount = shipments.filter(
+  const exportableShipments = shipments.filter(
+    (shipment) => shipment.podCount > 0,
+  );
+
+  const exportedPodCount = exportableShipments.filter(
     (shipment) => shipment.exportedAt !== null,
   ).length;
 
-  const pendingPodExportCount = shipments.length - exportedPodCount;
+  const pendingPodExportCount = exportableShipments.length - exportedPodCount;
 
   const safeTotalPages = Math.max(1, totalPages);
   const currentPageNumber = page + 1;
@@ -198,13 +294,12 @@ export function ShipmentsTable({
           </p>
 
           <p className="mt-1 text-sm font-medium text-ink/55">
-            Selected on page: {selectedCurrentShipmentCount}
+            Selected: {selectedCurrentShipmentCount}
           </p>
         </div>
 
         <p className="text-sm font-semibold text-ink/70 sm:self-end">
-          POD exported on page: {exportedPodCount} / Pending on page:{" "}
-          {pendingPodExportCount}
+          Exported: {exportedPodCount} / Pending: {pendingPodExportCount}
         </p>
       </div>
 
@@ -278,7 +373,7 @@ export function ShipmentsTable({
               </th>
 
               <th className="px-4 py-4 text-center font-bold text-ink">
-                Actions
+                Print
               </th>
             </tr>
           </thead>
@@ -340,36 +435,32 @@ export function ShipmentsTable({
                     </td>
 
                     <td className="px-4 py-4 text-center">
-                      <ProofOfDeliveryState
-                        value={shipment.podCount > 0 ? "available" : "missing"}
-                      />
+                      {shipment.podCount > 0 ? (
+                        <ShipmentPodThumbnails
+                          key={`${shipment.id}-${shipment.podCount}`}
+                          shipment={shipment}
+                          onViewPod={onViewPod}
+                        />
+                      ) : (
+                        <span className="text-sm font-semibold text-ink/35">
+                          --
+                        </span>
+                      )}
                     </td>
 
-                    <td className="px-4 py-4 text-sm text-ink/65">
+                    <td
+                      className={
+                        shipment.exportedAt
+                          ? "px-4 py-4 text-sm font-medium text-ink"
+                          : "px-4 py-4 text-sm text-ink/65"
+                      }
+                    >
                       {formatShipmentDateTime(shipment.exportedAt)}
                     </td>
 
                     <td className="px-4 py-4">
                       {shipment.podCount > 0 ? (
                         <div className="flex justify-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onViewPod(shipment)}
-                            aria-label={`View POD for shipment ${shipment.trackingCode}`}
-                            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50"
-                          >
-                            <Eye size={18} />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => onExportPod(shipment)}
-                            aria-label={`Export POD for shipment ${shipment.trackingCode}`}
-                            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-lg text-primary transition hover:bg-secondary/50"
-                          >
-                            <Download size={18} />
-                          </button>
-
                           <a
                             href={`/shipments/${shipment.id}/print`}
                             target="_blank"
