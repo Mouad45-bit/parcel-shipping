@@ -1,6 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import Link from "next/link";
 
 export type BackOfficeSection =
@@ -18,6 +22,8 @@ type NavigationSection = Exclude<
 type BackOfficeNavigationProps = {
   activeSection: BackOfficeSection;
 };
+
+const navigationCapsuleTransitionMs = 280;
 
 const navigationItems: {
   key: NavigationSection;
@@ -55,6 +61,18 @@ export function BackOfficeNavigation({
 }: BackOfficeNavigationProps) {
   const activeNavigationIndex = getNavigationIndex(activeSection);
   const [indicatorIndex, setIndicatorIndex] = useState(activeNavigationIndex);
+  const [selectedTextIndex, setSelectedTextIndex] = useState(
+    activeNavigationIndex,
+  );
+  const textColorTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (textColorTimeoutRef.current !== null) {
+        window.clearTimeout(textColorTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <nav
@@ -65,7 +83,7 @@ export function BackOfficeNavigation({
         {indicatorIndex >= 0 ? (
           <span
             aria-hidden="true"
-            className="absolute inset-y-1.5 rounded-xl bg-primary shadow-md transition-transform duration-200 ease-out"
+            className="absolute inset-y-1.5 rounded-xl bg-primary shadow-md transition-transform duration-[280ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
             style={{
               left: "calc(0.375rem + 4px)",
               transform: `translateX(calc(${indicatorIndex} * 10rem))`,
@@ -79,6 +97,8 @@ export function BackOfficeNavigation({
             item.key === activeSection;
           const isIndicatorSelected =
             itemIndex === indicatorIndex;
+          const isTextSelected =
+            itemIndex === selectedTextIndex;
           const isLastItem =
             itemIndex === navigationItems.length - 1;
 
@@ -92,13 +112,21 @@ export function BackOfficeNavigation({
                   : undefined
               }
               onClick={() => {
+                if (textColorTimeoutRef.current !== null) {
+                  window.clearTimeout(textColorTimeoutRef.current);
+                }
+
                 setIndicatorIndex(itemIndex);
+                textColorTimeoutRef.current = window.setTimeout(() => {
+                  setSelectedTextIndex(itemIndex);
+                  textColorTimeoutRef.current = null;
+                }, navigationCapsuleTransitionMs);
               }}
               className={[
-                "group relative z-10 w-40 rounded-xl px-4 py-2 text-center text-sm font-semibold transition-all duration-200 ease-out",
-                isIndicatorSelected
+                "group relative z-10 w-40 rounded-xl px-4 py-2 text-center text-sm font-semibold",
+                isTextSelected
                   ? "text-secondary"
-                  : "text-ink/65 hover:-translate-y-[0.5px] hover:text-primary",
+                  : "text-ink/65 hover:text-primary",
               ].join(" ")}
             >
               {!isIndicatorSelected ? (
