@@ -6,6 +6,9 @@ import {
   ChevronRight,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import {
@@ -51,11 +54,28 @@ export function PodViewerModal({
   const [error, setError] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [zoomPercent, setZoomPercent] = useState(100);
 
   const currentPod = pods[currentIndex] ?? null;
 
   const canGoPrevious = currentIndex > 0;
   const canGoNext = currentIndex < pods.length - 1;
+  const canZoomOut = zoomPercent > 75;
+  const canZoomIn = zoomPercent < 200;
+  const renderedImageWidthPercent = zoomPercent / 2;
+
+  function goToIndex(nextIndex: number) {
+    setCurrentIndex(nextIndex);
+    setZoomPercent(100);
+  }
+
+  function zoomOut() {
+    setZoomPercent((currentZoom) => Math.max(75, currentZoom - 25));
+  }
+
+  function zoomIn() {
+    setZoomPercent((currentZoom) => Math.min(200, currentZoom + 25));
+  }
 
   const loadPods = useCallback(
     async (signal: AbortSignal) => {
@@ -79,6 +99,7 @@ export function PodViewerModal({
             0,
           ),
         );
+        setZoomPercent(100);
         setListState("idle");
       } catch (loadError) {
         if (signal.aborted) {
@@ -188,12 +209,12 @@ export function PodViewerModal({
 
       if (event.key === "ArrowLeft" && canGoPrevious) {
         event.preventDefault();
-        setCurrentIndex((index) => index - 1);
+        goToIndex(currentIndex - 1);
       }
 
       if (event.key === "ArrowRight" && canGoNext) {
         event.preventDefault();
-        setCurrentIndex((index) => index + 1);
+        goToIndex(currentIndex + 1);
       }
     }
 
@@ -202,7 +223,7 @@ export function PodViewerModal({
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, canGoPrevious, canGoNext]);
+  }, [isOpen, canGoPrevious, canGoNext, currentIndex]);
 
   const counterText = useMemo(() => {
     if (pods.length === 0) {
@@ -222,9 +243,10 @@ export function PodViewerModal({
           : "Viewing POD documents."
       }
       size="wide"
+      scrollMode="content"
       onClose={onClose}
     >
-      <div className="p-5 sm:p-6">
+      <div className="flex min-h-0 flex-1 flex-col p-5 sm:p-6">
         {listState === "loading" ? (
           <div className="flex min-h-80 items-center justify-center gap-2 text-sm font-semibold text-ink/60">
             <LoaderCircle size={18} className="animate-spin" />
@@ -244,60 +266,105 @@ export function PodViewerModal({
           </div>
         ) : (
           <>
-            <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="mb-4 grid shrink-0 grid-cols-3 items-center gap-3">
               <button
                 type="button"
                 disabled={!canGoPrevious}
-                onClick={() => setCurrentIndex((index) => index - 1)}
+                onClick={() => goToIndex(currentIndex - 1)}
                 aria-label="View previous POD image"
-                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border px-3 text-sm font-bold text-ink transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-10 w-fit cursor-pointer items-center gap-2 rounded-lg border border-border px-3 text-sm font-bold text-ink transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <ChevronLeft size={17} />
                 Previous
               </button>
 
-              <p aria-live="polite" className="text-sm font-bold text-ink">
+              <p
+                aria-live="polite"
+                className="justify-self-center text-sm font-bold text-ink"
+              >
                 {counterText}
               </p>
 
               <button
                 type="button"
                 disabled={!canGoNext}
-                onClick={() => setCurrentIndex((index) => index + 1)}
+                onClick={() => goToIndex(currentIndex + 1)}
                 aria-label="View next POD image"
-                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border border-border px-3 text-sm font-bold text-ink transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-10 w-fit cursor-pointer items-center gap-2 justify-self-end rounded-lg border border-border px-3 text-sm font-bold text-ink transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Next
                 <ChevronRight size={17} />
               </button>
             </div>
 
-            <div className="flex min-h-80 items-center justify-center rounded-xl border border-border bg-page/60 p-3">
-              {imageState === "loading" ? (
-                <div className="flex items-center gap-2 text-sm font-semibold text-ink/60">
-                  <LoaderCircle size={18} className="animate-spin" />
-                  Loading image...
-                </div>
-              ) : imageState === "error" ? (
-                <div role="alert" className="text-center text-sm font-semibold text-red-700">
-                  {error}
-                  <button
-                    type="button"
-                    onClick={() => setReloadKey((key) => key + 1)}
-                    className="mx-auto mt-3 flex cursor-pointer items-center gap-2 font-bold"
+            <div className="relative min-h-80">
+              <div className="min-h-80 overflow-auto rounded-xl border border-border bg-page/60 p-3 sm:max-h-[65dvh]">
+                {imageState === "loading" ? (
+                  <div className="flex min-h-80 items-center justify-center gap-2 text-sm font-semibold text-ink/60">
+                    <LoaderCircle size={18} className="animate-spin" />
+                    Loading image...
+                  </div>
+                ) : imageState === "error" ? (
+                  <div
+                    role="alert"
+                    className="flex min-h-80 flex-col items-center justify-center text-center text-sm font-semibold text-red-700"
                   >
-                    <RefreshCw size={16} />
-                    Retry
-                  </button>
-                </div>
-              ) : imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageUrl}
-                  alt={`Proof of delivery ${currentIndex + 1} of ${pods.length} for shipment ${trackingCode ?? ""}`}
-                  className="max-h-[70dvh] w-auto max-w-full rounded-lg object-contain"
-                />
-              ) : null}
+                    {error}
+                    <button
+                      type="button"
+                      onClick={() => setReloadKey((key) => key + 1)}
+                      className="mx-auto mt-3 flex cursor-pointer items-center gap-2 font-bold"
+                    >
+                      <RefreshCw size={16} />
+                      Retry
+                    </button>
+                  </div>
+                ) : imageUrl ? (
+                  <div className="flex min-h-80 justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl}
+                      alt={`Proof of delivery ${currentIndex + 1} of ${pods.length} for shipment ${trackingCode ?? ""}`}
+                      className="h-auto max-w-none self-start rounded-lg object-contain"
+                      style={{
+                        width: `${renderedImageWidthPercent}%`,
+                      }}
+                    />
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="absolute bottom-4 right-4 flex items-center rounded-lg border border-primary/15 bg-secondary/95 text-primary shadow-lg backdrop-blur">
+                <button
+                  type="button"
+                  disabled={!canZoomOut}
+                  onClick={zoomOut}
+                  aria-label="Zoom out POD image"
+                  className="inline-flex size-9 cursor-pointer items-center justify-center transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ZoomOut size={17} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setZoomPercent(100)}
+                  aria-label="Reset POD image zoom"
+                  className="inline-flex h-9 cursor-pointer items-center gap-1 border-x border-primary/15 px-3 text-xs font-bold transition hover:bg-secondary"
+                >
+                  <RotateCcw size={14} />
+                  {zoomPercent}%
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!canZoomIn}
+                  onClick={zoomIn}
+                  aria-label="Zoom in POD image"
+                  className="inline-flex size-9 cursor-pointer items-center justify-center transition hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ZoomIn size={17} />
+                </button>
+              </div>
             </div>
           </>
         )}

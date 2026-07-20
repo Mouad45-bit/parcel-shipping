@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 type ModalSize = "default" | "wide";
+type ModalScrollMode = "modal" | "content";
 
 type ModalProps = {
   isOpen: boolean;
@@ -12,6 +13,7 @@ type ModalProps = {
   description: string;
   children: ReactNode;
   size?: ModalSize;
+  scrollMode?: ModalScrollMode;
   onClose: () => void;
 };
 
@@ -30,6 +32,7 @@ export function Modal({
   description,
   children,
   size = "default",
+  scrollMode = "modal",
   onClose,
 }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
@@ -131,7 +134,10 @@ export function Modal({
         aria-describedby="modal-description"
         tabIndex={-1}
         className={[
-          "max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-2xl border border-border bg-surface shadow-xl outline-none",
+          "max-h-[calc(100dvh-2rem)] w-full rounded-2xl border border-border bg-surface shadow-xl outline-none",
+          scrollMode === "content"
+            ? "flex flex-col overflow-hidden"
+            : "overflow-y-auto",
           widthClassName,
         ].join(" ")}
       >
