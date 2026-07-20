@@ -6,6 +6,8 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -16,6 +18,10 @@ import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+        private static final Logger LOGGER =
+                        LoggerFactory.getLogger(
+                                        GlobalExceptionHandler.class);
 
         @ExceptionHandler(MissingServletRequestParameterException.class)
         public ResponseEntity<ApiErrorResponse> handleMissingParameter(
@@ -156,6 +162,11 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiErrorResponse> handleUnexpectedError(
                         Exception exception,
                         HttpServletRequest request) {
+                LOGGER.error(
+                                "Unexpected shipments-service error for {}.",
+                                request.getRequestURI(),
+                                exception);
+
                 return buildResponse(
                                 HttpStatus.INTERNAL_SERVER_ERROR,
                                 "INTERNAL_SERVER_ERROR",

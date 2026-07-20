@@ -3,6 +3,7 @@ package com.parcelshipping.shipments.repository;
 import com.parcelshipping.shipments.domain.ShipmentPod;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -45,6 +46,7 @@ public interface ShipmentPodRepository
             """)
     List<ShipmentPodCountProjection>
     countByShipmentIds(
+            @Param("shipmentIds")
             Collection<UUID> shipmentIds
     );
 }
