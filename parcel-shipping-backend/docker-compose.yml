@@ -3,11 +3,10 @@ services:
     build:
       context: .
       dockerfile: config-server/Dockerfile
+    pull_policy: build
     container_name: parcel-config-server
     ports:
       - "8888:8888"
-    volumes:
-      - ./config-repository:/config-repository:ro
     environment:
       SPRING_APPLICATION_NAME: config-server
       SPRING_PROFILES_ACTIVE: native
