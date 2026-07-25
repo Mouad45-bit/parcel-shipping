@@ -12,7 +12,11 @@ services:
       SPRING_PROFILES_ACTIVE: native
       SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS: file:/config-repository
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8888/actuator/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8888/actuator/health || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -24,6 +28,7 @@ services:
     build:
       context: .
       dockerfile: discovery-server/Dockerfile
+    pull_policy: build
     container_name: parcel-discovery-server
     ports:
       - "8761:8761"
@@ -34,7 +39,11 @@ services:
       config-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8761/actuator/health || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -46,6 +55,7 @@ services:
     build:
       context: .
       dockerfile: api-gateway/Dockerfile
+    pull_policy: build
     container_name: parcel-api-gateway
     ports:
       - "8080:8080"
@@ -59,7 +69,11 @@ services:
       discovery-server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/actuator/health || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -98,6 +112,7 @@ services:
     build:
       context: ./pod-generator-service
       dockerfile: Dockerfile
+    pull_policy: build
     container_name: parcel-pod-generator-service
     expose:
       - "8090"
@@ -118,6 +133,7 @@ services:
     build:
       context: .
       dockerfile: shipments-service/Dockerfile
+    pull_policy: build
     container_name: parcel-shipments-service
     ports:
       - "8081"
@@ -145,7 +161,11 @@ services:
       pod-generator-service:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8081/actuator/health || exit 1" ]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8081/actuator/health || exit 1"
+        ]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -160,26 +180,20 @@ services:
     build:
       context: .
       dockerfile: statistics-service/Dockerfile
-
+    pull_policy: build
     container_name: parcel-statistics-service
-
     ports:
       - "8083"
-
     environment:
       SPRING_APPLICATION_NAME: statistics-service
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
-
     depends_on:
       config-server:
         condition: service_healthy
-
       discovery-server:
         condition: service_healthy
-
       shipments-service:
         condition: service_healthy
-
     healthcheck:
       test:
         [
@@ -190,7 +204,6 @@ services:
       timeout: 5s
       retries: 12
       start_period: 40s
-
     networks:
       - parcel-network
 
@@ -225,6 +238,7 @@ services:
     build:
       context: .
       dockerfile: auth-service/Dockerfile
+    pull_policy: build
     container_name: parcel-auth-service
     ports:
       - "8082"
