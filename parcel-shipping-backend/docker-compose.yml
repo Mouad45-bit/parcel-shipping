@@ -134,8 +134,8 @@ services:
       context: .
       dockerfile: shipments-service/Dockerfile
     pull_policy: build
-    container_name: parcel-shipments-service
-    ports:
+    scale: 2
+    expose:
       - "8081"
     environment:
       SPRING_APPLICATION_NAME: shipments-service
@@ -181,8 +181,8 @@ services:
       context: .
       dockerfile: statistics-service/Dockerfile
     pull_policy: build
-    container_name: parcel-statistics-service
-    ports:
+    scale: 2
+    expose:
       - "8083"
     environment:
       SPRING_APPLICATION_NAME: statistics-service
@@ -239,8 +239,8 @@ services:
       context: .
       dockerfile: auth-service/Dockerfile
     pull_policy: build
-    container_name: parcel-auth-service
-    ports:
+    scale: 2
+    expose:
       - "8082"
     environment:
       SPRING_APPLICATION_NAME: auth-service

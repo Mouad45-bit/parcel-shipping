@@ -35,6 +35,9 @@ security:
       same-site: Lax
 
 eureka:
+  instance:
+    instance-id: ${spring.application.name}:${HOSTNAME:${random.value}}
+    prefer-ip-address: true
   client:
     service-url:
       defaultZone: http://discovery-server:8761/eureka/
