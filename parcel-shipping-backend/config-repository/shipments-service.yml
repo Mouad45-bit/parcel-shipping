@@ -37,6 +37,10 @@ management:
     env:
       enabled: true
 
+load-balancing:
+  observation:
+    enabled: ${LOAD_BALANCING_OBSERVATION_ENABLED:true}
+
 shipment-storage:
   pods-root: ${SHIPMENT_PODS_STORAGE_ROOT:/data/pods}
   exports-root: ${SHIPMENT_EXPORTS_STORAGE_ROOT:/data/exports}

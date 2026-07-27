@@ -33,3 +33,7 @@ management:
   info:
     env:
       enabled: true
+
+load-balancing:
+  observation:
+    enabled: ${LOAD_BALANCING_OBSERVATION_ENABLED:true}

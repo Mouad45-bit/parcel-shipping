@@ -34,6 +34,10 @@ security:
       secure: ${AUTH_COOKIE_SECURE:false}
       same-site: Lax
 
+load-balancing:
+  observation:
+    enabled: ${LOAD_BALANCING_OBSERVATION_ENABLED:true}
+
 eureka:
   instance:
     instance-id: ${spring.application.name}:${HOSTNAME:${random.value}}

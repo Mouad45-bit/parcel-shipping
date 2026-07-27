@@ -151,6 +151,7 @@ services:
       SHIPMENT_POD_SEED_RANDOM_SEED: ${SHIPMENT_POD_SEED_RANDOM_SEED:-parcel-shipping-local}
       SHIPMENT_POD_SEED_BATCH_SIZE: ${SHIPMENT_POD_SEED_BATCH_SIZE:-100}
       SHIPMENT_POD_SEED_FAIL_FAST: ${SHIPMENT_POD_SEED_FAIL_FAST:-true}
+      LOAD_BALANCING_OBSERVATION_ENABLED: "true"
     depends_on:
       config-server:
         condition: service_healthy
@@ -187,6 +188,7 @@ services:
     environment:
       SPRING_APPLICATION_NAME: statistics-service
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
+      LOAD_BALANCING_OBSERVATION_ENABLED: "true"
     depends_on:
       config-server:
         condition: service_healthy
@@ -247,6 +249,7 @@ services:
       SPRING_CONFIG_IMPORT: optional:configserver:http://config-server:8888
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET must be set}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-false}
+      LOAD_BALANCING_OBSERVATION_ENABLED: "true"
     depends_on:
       config-server:
         condition: service_healthy
