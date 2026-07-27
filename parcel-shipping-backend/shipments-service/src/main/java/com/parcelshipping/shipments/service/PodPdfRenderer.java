@@ -18,7 +18,16 @@ import java.time.format.DateTimeFormatter;
 public class PodPdfRenderer {
 
     private static final float MARGIN = 42F;
-    private static final float HEADER_HEIGHT = 150F;
+    private static final float HEADER_HEIGHT = 96F;
+    private static final float FIELD_GAP = 14F;
+    private static final PDType1Font REGULAR_FONT =
+            new PDType1Font(
+                    Standard14Fonts.FontName.HELVETICA
+            );
+    private static final PDType1Font BOLD_FONT =
+            new PDType1Font(
+                    Standard14Fonts.FontName.HELVETICA_BOLD
+            );
 
     public byte[] render(
             ShipmentPodService.PodDocumentContent content
@@ -85,72 +94,66 @@ public class PodPdfRenderer {
                         18,
                         y
                 );
-                y = writeLine(
+                y = writeFieldsLine(
                         stream,
-                        "Client: " + podDocument.client(),
                         11,
-                        y
+                        y,
+                        new MetadataField(
+                                "Client",
+                                podDocument.client()
+                        ),
+                        new MetadataField(
+                                "Tracking code",
+                                podDocument.trackingCode()
+                        ),
+                        new MetadataField(
+                                "Destination",
+                                podDocument.destination()
+                        )
                 );
-                y = writeLine(
+                y = writeFieldsLine(
                         stream,
-                        "Generated at: "
-                                + DateTimeFormatter.ISO_INSTANT
-                                .format(
-                                        podDocument.generatedAt()
-                                ),
                         11,
-                        y
-                );
-                y -= 8;
-                y = writeLine(
-                        stream,
-                        "Tracking code: "
-                                + podDocument.trackingCode(),
-                        11,
-                        y
-                );
-                y = writeLine(
-                        stream,
-                        "Destination: "
-                                + podDocument.destination(),
-                        11,
-                        y
-                );
-                y = writeLine(
-                        stream,
-                        "Dispatch date: "
-                                + podDocument.dispatchDate(),
-                        11,
-                        y
-                );
-                y = writeLine(
-                        stream,
-                        "Status: "
-                                + podDocument.status(),
-                        11,
-                        y
-                );
-                y = writeLine(
-                        stream,
-                        "Status date: "
-                                + podDocument.statusDate(),
-                        11,
-                        y
+                        y,
+                        new MetadataField(
+                                "Dispatch date",
+                                String.valueOf(
+                                        podDocument.dispatchDate()
+                                )
+                        ),
+                        new MetadataField(
+                                "Status",
+                                podDocument.status()
+                        ),
+                        new MetadataField(
+                                "Status date",
+                                String.valueOf(
+                                        podDocument.statusDate()
+                                )
+                        ),
+                        new MetadataField(
+                                "Generated at",
+                                DateTimeFormatter.ISO_INSTANT
+                                        .format(
+                                                podDocument.generatedAt()
+                                        )
+                        )
                 );
             } else {
-                y = writeLine(
+                y = writeFieldsLine(
                         stream,
-                        "Tracking code: "
-                                + podDocument.trackingCode(),
                         13,
-                        y
-                );
-                y = writeLine(
-                        stream,
-                        "Status date: "
-                                + podDocument.statusDate(),
-                        11,
-                        y
+                        y,
+                        new MetadataField(
+                                "Tracking code",
+                                podDocument.trackingCode()
+                        ),
+                        new MetadataField(
+                                "Status date",
+                                String.valueOf(
+                                        podDocument.statusDate()
+                                )
+                        )
                 );
             }
 
@@ -207,9 +210,7 @@ public class PodPdfRenderer {
     ) throws IOException {
         stream.beginText();
         stream.setFont(
-                new PDType1Font(
-                        Standard14Fonts.FontName.HELVETICA
-                ),
+                REGULAR_FONT,
                 fontSize
         );
         stream.newLineAtOffset(MARGIN, y);
@@ -217,5 +218,141 @@ public class PodPdfRenderer {
         stream.endText();
 
         return y - fontSize - 7F;
+    }
+
+    private float writeFieldsLine(
+            PDPageContentStream stream,
+            int fontSize,
+            float y,
+            MetadataField... fields
+    ) throws IOException {
+        float availableWidth =
+                PDRectangle.A4.getWidth()
+                        - 2 * MARGIN;
+        float columnWidth =
+                (
+                        availableWidth
+                                - FIELD_GAP
+                                * (fields.length - 1)
+                )
+                        / fields.length;
+
+        for (int index = 0; index < fields.length; index++) {
+            MetadataField field = fields[index];
+            float x =
+                    MARGIN
+                            + index
+                            * (columnWidth + FIELD_GAP);
+
+            writeField(
+                    stream,
+                    field,
+                    fontSize,
+                    x,
+                    y,
+                    columnWidth
+            );
+        }
+
+        return y - fontSize - 7F;
+    }
+
+    private void writeField(
+            PDPageContentStream stream,
+            MetadataField field,
+            int fontSize,
+            float x,
+            float y,
+            float maxWidth
+    ) throws IOException {
+        String label = field.label() + ": ";
+        String value = truncateToWidth(
+                field.value(),
+                fontSize,
+                maxWidth - textWidth(
+                        BOLD_FONT,
+                        label,
+                        fontSize
+                )
+        );
+
+        stream.beginText();
+        stream.newLineAtOffset(x, y);
+        stream.setFont(BOLD_FONT, fontSize);
+        stream.showText(label);
+        stream.setFont(REGULAR_FONT, fontSize);
+        stream.showText(value);
+        stream.endText();
+    }
+
+    private String truncateToWidth(
+            String value,
+            int fontSize,
+            float maxWidth
+    ) throws IOException {
+        String normalizedValue =
+                value == null
+                        ? ""
+                        : value;
+
+        if (
+                maxWidth <= 0
+                        || textWidth(
+                        REGULAR_FONT,
+                        normalizedValue,
+                        fontSize
+                ) <= maxWidth
+        ) {
+            return normalizedValue;
+        }
+
+        String ellipsis = "...";
+        float ellipsisWidth =
+                textWidth(
+                        REGULAR_FONT,
+                        ellipsis,
+                        fontSize
+                );
+
+        for (
+                int length = normalizedValue.length();
+                length > 0;
+                length--
+        ) {
+            String candidate =
+                    normalizedValue.substring(0, length);
+
+            if (
+                    textWidth(
+                            REGULAR_FONT,
+                            candidate,
+                            fontSize
+                    )
+                            + ellipsisWidth
+                            <= maxWidth
+            ) {
+                return candidate + ellipsis;
+            }
+        }
+
+        return ellipsisWidth <= maxWidth
+                ? ellipsis
+                : "";
+    }
+
+    private float textWidth(
+            PDType1Font font,
+            String text,
+            int fontSize
+    ) throws IOException {
+        return font.getStringWidth(text)
+                / 1000F
+                * fontSize;
+    }
+
+    private record MetadataField(
+            String label,
+            String value
+    ) {
     }
 }
