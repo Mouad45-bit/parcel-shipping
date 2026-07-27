@@ -18,9 +18,15 @@ type BrowserPdfImage = {
   height: number;
 };
 
+type MetadataField = {
+  label: string;
+  value: string;
+};
+
 const a4Width = 595.28;
 const a4Height = 841.89;
 const pageMargin = 40;
+const fieldGap = 14;
 const encoder = new TextEncoder();
 
 function sanitizeFilename(value: string) {
@@ -112,44 +118,82 @@ function textLine(value: string, x: number, y: number, size = 10) {
   return `BT /F1 ${size} Tf 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm (${escapePdfText(value)}) Tj ET\n`;
 }
 
+function textField(field: MetadataField, x: number, y: number, size = 10) {
+  return `BT 1 0 0 1 ${x.toFixed(2)} ${y.toFixed(2)} Tm /F2 ${size} Tf (${escapePdfText(`${field.label}: `)}) Tj /F1 ${size} Tf (${escapePdfText(field.value)}) Tj ET\n`;
+}
+
+function textFieldsLine(fields: MetadataField[], y: number, size = 10) {
+  const availableWidth = a4Width - pageMargin * 2;
+  const columnCount = fields.length === 1 ? 1 : 2;
+  const columnWidth =
+    (availableWidth - fieldGap * (columnCount - 1)) / columnCount;
+
+  return fields
+    .map((field, index) =>
+      textField(field, pageMargin + index * (columnWidth + fieldGap), y, size),
+    )
+    .join("");
+}
+
 function buildPageContent(
   document: PodDocument,
   image: BrowserPdfImage,
   index: number,
 ) {
   const isFirstPage = index === 0;
-  const lines = isFirstPage
+  const rows = isFirstPage
     ? [
-        { text: "Proof of Delivery", size: 18, gap: 26 },
-        { text: `Client: ${document.client}`, size: 11, gap: 16 },
         {
-          text: `Generated at: ${formatShipmentDateTime(document.generatedAt)}`,
+          fields: [
+            { label: "Client", value: document.client },
+            { label: "Tracking code", value: document.trackingCode },
+          ],
           size: 11,
-          gap: 28,
-        },
-        { text: `Tracking code: ${document.trackingCode}`, size: 10, gap: 15 },
-        { text: `Destination: ${document.destination}`, size: 10, gap: 15 },
-        {
-          text: `Dispatch date: ${formatShipmentDateTime(document.dispatchDate)}`,
-          size: 10,
-          gap: 15,
+          gap: 17,
         },
         {
-          text: `Status: ${shipmentStatusLabels[document.status]}`,
-          size: 10,
-          gap: 15,
+          fields: [
+            { label: "Destination", value: document.destination },
+            {
+              label: "Dispatch date",
+              value: formatShipmentDateTime(document.dispatchDate),
+            },
+          ],
+          size: 11,
+          gap: 17,
         },
         {
-          text: `Status date: ${formatShipmentDateTime(document.statusDate)}`,
-          size: 10,
+          fields: [
+            { label: "Status", value: shipmentStatusLabels[document.status] },
+            {
+              label: "Status date",
+              value: formatShipmentDateTime(document.statusDate),
+            },
+          ],
+          size: 11,
+          gap: 17,
+        },
+        {
+          fields: [
+            {
+              label: "Generated at",
+              value: formatShipmentDateTime(document.generatedAt),
+            },
+          ],
+          size: 11,
           gap: 24,
         },
       ]
     : [
-        { text: `Tracking code: ${document.trackingCode}`, size: 10, gap: 15 },
         {
-          text: `Status date: ${formatShipmentDateTime(document.statusDate)}`,
-          size: 10,
+          fields: [
+            { label: "Tracking code", value: document.trackingCode },
+            {
+              label: "Status date",
+              value: formatShipmentDateTime(document.statusDate),
+            },
+          ],
+          size: 13,
           gap: 24,
         },
       ];
@@ -157,9 +201,14 @@ function buildPageContent(
   let y = a4Height - pageMargin;
   let content = "";
 
-  lines.forEach((line) => {
-    content += textLine(line.text, pageMargin, y, line.size);
-    y -= line.gap;
+  if (isFirstPage) {
+    content += textLine("Proof of Delivery", pageMargin, y, 18);
+    y -= 26;
+  }
+
+  rows.forEach((row) => {
+    content += textFieldsLine(row.fields, y, row.size);
+    y -= row.gap;
   });
 
   const imageAreaTop = y;
@@ -220,9 +269,9 @@ function buildPdf(document: PodDocument, images: BrowserPdfImage[]) {
 
   push("%PDF-1.4\n");
 
-  const pageIds = images.map((_, index) => 4 + index * 3);
-  const contentIds = images.map((_, index) => 5 + index * 3);
-  const imageIds = images.map((_, index) => 6 + index * 3);
+  const pageIds = images.map((_, index) => 5 + index * 3);
+  const contentIds = images.map((_, index) => 6 + index * 3);
+  const imageIds = images.map((_, index) => 7 + index * 3);
 
   object(1, "<< /Type /Catalog /Pages 2 0 R >>\n");
   object(
@@ -232,11 +281,12 @@ function buildPdf(document: PodDocument, images: BrowserPdfImage[]) {
       .join(" ")}] >>\n`,
   );
   object(3, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\n");
+  object(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>\n");
 
   images.forEach((image, index) => {
     object(
       pageIds[index],
-      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${a4Width} ${a4Height}] /Resources << /Font << /F1 3 0 R >> /XObject << /Im${index + 1} ${imageIds[index]} 0 R >> >> /Contents ${contentIds[index]} 0 R >>\n`,
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${a4Width} ${a4Height}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Im${index + 1} ${imageIds[index]} 0 R >> >> /Contents ${contentIds[index]} 0 R >>\n`,
     );
     object(contentIds[index], buildPageContent(document, image, index));
     object(
@@ -247,7 +297,7 @@ function buildPdf(document: PodDocument, images: BrowserPdfImage[]) {
   });
 
   const xrefOffset = byteLength;
-  const objectCount = 3 + images.length * 3;
+  const objectCount = 4 + images.length * 3;
 
   push(`xref\n0 ${objectCount + 1}\n`);
   push("0000000000 65535 f \n");

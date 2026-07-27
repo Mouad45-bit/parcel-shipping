@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter;
 public class PodPdfRenderer {
 
     private static final float MARGIN = 42F;
-    private static final float HEADER_HEIGHT = 96F;
+    private static final float HEADER_HEIGHT = 132F;
     private static final float FIELD_GAP = 14F;
     private static final PDType1Font REGULAR_FONT =
             new PDType1Font(
@@ -105,10 +105,6 @@ public class PodPdfRenderer {
                         new MetadataField(
                                 "Tracking code",
                                 podDocument.trackingCode()
-                        ),
-                        new MetadataField(
-                                "Destination",
-                                podDocument.destination()
                         )
                 );
                 y = writeFieldsLine(
@@ -116,11 +112,20 @@ public class PodPdfRenderer {
                         11,
                         y,
                         new MetadataField(
+                                "Destination",
+                                podDocument.destination()
+                        ),
+                        new MetadataField(
                                 "Dispatch date",
                                 String.valueOf(
                                         podDocument.dispatchDate()
                                 )
-                        ),
+                        )
+                );
+                y = writeFieldsLine(
+                        stream,
+                        11,
+                        y,
                         new MetadataField(
                                 "Status",
                                 podDocument.status()
@@ -130,7 +135,12 @@ public class PodPdfRenderer {
                                 String.valueOf(
                                         podDocument.statusDate()
                                 )
-                        ),
+                        )
+                );
+                y = writeFieldsLine(
+                        stream,
+                        11,
+                        y,
                         new MetadataField(
                                 "Generated at",
                                 DateTimeFormatter.ISO_INSTANT
@@ -229,13 +239,17 @@ public class PodPdfRenderer {
         float availableWidth =
                 PDRectangle.A4.getWidth()
                         - 2 * MARGIN;
+        int columnCount =
+                fields.length == 1
+                        ? 1
+                        : 2;
         float columnWidth =
                 (
                         availableWidth
                                 - FIELD_GAP
-                                * (fields.length - 1)
+                                * (columnCount - 1)
                 )
-                        / fields.length;
+                        / columnCount;
 
         for (int index = 0; index < fields.length; index++) {
             MetadataField field = fields[index];
@@ -249,8 +263,7 @@ public class PodPdfRenderer {
                     field,
                     fontSize,
                     x,
-                    y,
-                    columnWidth
+                    y
             );
         }
 
@@ -262,19 +275,13 @@ public class PodPdfRenderer {
             MetadataField field,
             int fontSize,
             float x,
-            float y,
-            float maxWidth
+            float y
     ) throws IOException {
         String label = field.label() + ": ";
-        String value = truncateToWidth(
-                field.value(),
-                fontSize,
-                maxWidth - textWidth(
-                        BOLD_FONT,
-                        label,
-                        fontSize
-                )
-        );
+        String value =
+                field.value() == null
+                        ? ""
+                        : field.value();
 
         stream.beginText();
         stream.newLineAtOffset(x, y);
@@ -283,71 +290,6 @@ public class PodPdfRenderer {
         stream.setFont(REGULAR_FONT, fontSize);
         stream.showText(value);
         stream.endText();
-    }
-
-    private String truncateToWidth(
-            String value,
-            int fontSize,
-            float maxWidth
-    ) throws IOException {
-        String normalizedValue =
-                value == null
-                        ? ""
-                        : value;
-
-        if (
-                maxWidth <= 0
-                        || textWidth(
-                        REGULAR_FONT,
-                        normalizedValue,
-                        fontSize
-                ) <= maxWidth
-        ) {
-            return normalizedValue;
-        }
-
-        String ellipsis = "...";
-        float ellipsisWidth =
-                textWidth(
-                        REGULAR_FONT,
-                        ellipsis,
-                        fontSize
-                );
-
-        for (
-                int length = normalizedValue.length();
-                length > 0;
-                length--
-        ) {
-            String candidate =
-                    normalizedValue.substring(0, length);
-
-            if (
-                    textWidth(
-                            REGULAR_FONT,
-                            candidate,
-                            fontSize
-                    )
-                            + ellipsisWidth
-                            <= maxWidth
-            ) {
-                return candidate + ellipsis;
-            }
-        }
-
-        return ellipsisWidth <= maxWidth
-                ? ellipsis
-                : "";
-    }
-
-    private float textWidth(
-            PDType1Font font,
-            String text,
-            int fontSize
-    ) throws IOException {
-        return font.getStringWidth(text)
-                / 1000F
-                * fontSize;
     }
 
     private record MetadataField(
