@@ -52,3 +52,17 @@ management:
   info:
     env:
       enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      topology: ${LOAD_BALANCING_SCENARIO:unspecified}
+
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true

@@ -37,6 +37,20 @@ management:
     env:
       enabled: true
 
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      topology: ${LOAD_BALANCING_SCENARIO:unspecified}
+
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 load-balancing:
   observation:
     enabled: ${LOAD_BALANCING_OBSERVATION_ENABLED:true}
