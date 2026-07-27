@@ -81,6 +81,34 @@ services:
     networks:
       - parcel-network
 
+
+  frontend:
+    build:
+      context: ../parcel-shipping-frontend
+      dockerfile: Dockerfile
+    pull_policy: build
+    container_name: parcel-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      BACKEND_API_BASE_URL: http://api-gateway:8080
+      NODE_ENV: production
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://localhost:3000/login').then(response => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - parcel-network
+
   shipments-postgres:
     image: postgres:17-alpine
     container_name: parcel-shipments-postgres
