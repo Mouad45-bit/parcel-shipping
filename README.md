@@ -2,11 +2,11 @@
 
 
 
-Application de gestion et de suivi des expéditions avec prise en charge des \*\*POD (Proof of Delivery)\*\*.
+Application de gestion et de suivi des expéditions avec prise en charge des **POD (Proof of Delivery)**.
 
 
 
-Le projet repose sur une architecture \*\*microservices\*\* utilisant Spring Boot / Spring Cloud, Eureka, Config Server, API Gateway, PostgreSQL et Docker. L'interface utilisateur est développée avec Next.js.
+Le projet repose sur une architecture **microservices** utilisant Spring Boot / Spring Cloud, Eureka, Config Server, API Gateway, PostgreSQL et Docker. L'interface utilisateur est développée avec Next.js.
 
 
 
@@ -86,7 +86,7 @@ Copy-Item .env.example .env
 
 
 
-Renseigner ensuite `AUTH\_JWT\_SECRET` dans `.env` avec une clé secrète suffisamment longue.
+Renseigner ensuite `AUTH_JWT_SECRET` dans `.env` avec une clé secrète suffisamment longue.
 
 
 
@@ -96,27 +96,27 @@ Exemple :
 
 ```env
 
-AUTH\_JWT\_SECRET=change-me-with-a-long-random-secret
+AUTH_JWT_SECRET=change-me-with-a-long-random-secret
 
-AUTH\_COOKIE\_SECURE=false
-
-
-
-SHIPMENT\_POD\_SEED\_ENABLED=true
-
-SHIPMENT\_POD\_SEED\_RANDOM\_SEED=parcel-shipping-demo-2026
-
-SHIPMENT\_POD\_SEED\_MINIMUM\_COUNT=1
-
-SHIPMENT\_POD\_SEED\_MAXIMUM\_COUNT=3
-
-SHIPMENT\_POD\_SEED\_BATCH\_SIZE=100
-
-SHIPMENT\_POD\_SEED\_FAIL\_FAST=true
+AUTH_COOKIE_SECURE=false
 
 
 
-GRAFANA\_ADMIN\_PASSWORD=grafana123
+SHIPMENT_POD_SEED_ENABLED=true
+
+SHIPMENT_POD_SEED_RANDOM_SEED=parcel-shipping-demo-2026
+
+SHIPMENT_POD_SEED_MINIMUM_COUNT=1
+
+SHIPMENT_POD_SEED_MAXIMUM_COUNT=3
+
+SHIPMENT_POD_SEED_BATCH_SIZE=100
+
+SHIPMENT_POD_SEED_FAIL_FAST=true
+
+
+
+GRAFANA_ADMIN_PASSWORD=grafana123
 
 ```
 
@@ -172,23 +172,14 @@ docker compose down
 
 ## Accès
 
-
-
-| Service       | Adresse               |
-
-| ------------- | --------------------- |
-
-| Application   | http://localhost:3000 |
-
-| API Gateway   | http://localhost:8080 |
-
-| Eureka        | http://localhost:8761 |
-
+| Service | Adresse |
+| --- | --- |
+| Application | http://localhost:3000 |
+| API Gateway | http://localhost:8080 |
+| Eureka | http://localhost:8761 |
 | Config Server | http://localhost:8888 |
-
-| Prometheus    | http://localhost:9090 |
-
-| Grafana       | http://localhost:3001 |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3001 |
 
 
 
@@ -232,11 +223,11 @@ Mot de passe : grafana123
 
 Port : 5433
 
-Base : shipments\_db
+Base : shipments_db
 
-Utilisateur : shipments\_user
+Utilisateur : shipments_user
 
-Mot de passe : shipments\_password
+Mot de passe : shipments_password
 
 ```
 
@@ -250,11 +241,11 @@ Mot de passe : shipments\_password
 
 Port : 5434
 
-Base : users\_db
+Base : users_db
 
-Utilisateur : users\_user
+Utilisateur : users_user
 
-Mot de passe : users\_password
+Mot de passe : users_password
 
 ```
 
