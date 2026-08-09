@@ -40,8 +40,6 @@ git clone https://github.com/Mouad45-bit/parcel-shipping.git
 
 cd parcel-shipping
 
-git checkout develop
-
 ```
 
 
