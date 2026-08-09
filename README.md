@@ -1,4 +1,4 @@
-\# Parcel Shipping
+# Parcel Shipping
 
 
 
@@ -14,23 +14,23 @@ Le système inclut également Prometheus, Grafana et cAdvisor pour la supervisio
 
 
 
-\## Lancement
+## Lancement
 
 
 
-\### Prérequis
+### Prérequis
 
 
 
-\* Git
+* Git
 
-\* Docker
+* Docker
 
-\* Docker Compose
+* Docker Compose
 
 
 
-\### 1. Cloner le projet
+### 1. Cloner le projet
 
 
 
@@ -46,7 +46,7 @@ git checkout develop
 
 
 
-\### 2. Configurer l'environnement
+### 2. Configurer l'environnement
 
 
 
@@ -122,7 +122,7 @@ GRAFANA\_ADMIN\_PASSWORD=grafana123
 
 
 
-\### 3. Démarrer le système
+### 3. Démarrer le système
 
 
 
@@ -170,7 +170,7 @@ docker compose down
 
 
 
-\## Accès
+## Accès
 
 
 
@@ -192,11 +192,11 @@ docker compose down
 
 
 
-\## Identifiants
+## Identifiants
 
 
 
-\### Application
+### Application
 
 
 
@@ -210,7 +210,7 @@ Mot de passe : operator123
 
 
 
-\### Grafana
+### Grafana
 
 
 
@@ -224,7 +224,7 @@ Mot de passe : grafana123
 
 
 
-\### PostgreSQL — Expéditions
+### PostgreSQL — Expéditions
 
 
 
@@ -242,7 +242,7 @@ Mot de passe : shipments\_password
 
 
 
-\### PostgreSQL — Utilisateurs
+### PostgreSQL — Utilisateurs
 
 
 
