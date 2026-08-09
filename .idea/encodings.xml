@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/api-gateway/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/api-gateway/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/auth-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/auth-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/config-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/config-server/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/discovery-server/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/discovery-server/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/shipments-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/shipments-service/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/statistics-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/parcel-shipping-backend/statistics-service/src/main/resources" charset="UTF-8" />
+  </component>
+</project>
